@@ -1,0 +1,2 @@
+source /home/ya/emsdk-main/emsdk_env.sh
+em++ -o index.html source/**.cpp /home/ya/code/superpooplib/src/**.cpp -Os -Wall /home/ya/raylib-master/srcweb/libraylib.a -I /home/ya/raylib-master/srcweb/ -I headers/ -I /home/ya/code/superpooplib/headers/ -L /home/ya/raylib-master/srcweb/libraylib.a -s USE_GLFW=3 -s EXPORTED_RUNTIME_METHODS=ccall -s EXPORTED_FUNCTIONS="['_malloc', '_main']" --shell-file /home/ya/raylib-master/srcweb/shell.html -DPLATFORM_WEB --preload-file res -Wno-narrowing -std=c++20 \
