@@ -7,7 +7,7 @@
 
 /* TO DO:
 make quit button work
-make popup diologues, for asking to save when quitting and for naming saved file
+make popup diologues, for asking to save when quitting and for naming saved file (will need to change the alignment thing for button and add the alignment options to textinput)
 make the ui for creating level nicer - have the mode where you can edit blocks be the default then make block mode into block placing mode
 make it so you can place blocks to the up and to the left
 WELL HAVE FUN, IM OFF TO MAKE THE MOTHERFUCKING GAME!
@@ -68,7 +68,12 @@ void saveCourse(Course& crs, std::string name) // adds .claycrs to name AND OVER
 #endif
 }
 
-void drawTextureTiles(Texture2D txtr, Vector2 origin, Rectangle cameraRec)
+Rectangle getCameraRec(const Camera2D& cam)
+{
+    return {cam.target.x - cam.offset.x / cam.zoom, cam.target.y - cam.offset.y / cam.zoom, cam.offset.x * 2 / cam.zoom, cam.offset.y * 2 / cam.zoom};
+}
+
+void drawTextureTiles(Texture2D txtr, Vector2 origin, Rectangle cameraRec) // this should be out of camera mode
 {
     std::vector<Vector2> txtrsToDraw{};
     // calculating the upper left txtr
@@ -152,6 +157,18 @@ bool checkCollisionForBlockScaling(Vector2 p, Block b)
     return false;
 }
 
+void drawCourseBlocks(const Course& crs, Rectangle camRec)
+{
+    for (auto& b : crs.blocks)
+    {
+        if (CheckCollisionRecs(getRotatedRecBounds({b.pos.x-b.size.x/2, b.pos.y-b.size.y/2, b.size.x, b.size.y}, b.rot, b.pos), camRec))
+        { // only draw the block if it's bounding box touches the camera
+            Texture2D txtr{getBlockTexture(b.type)};
+            DrawTexturePro(txtr, {0, 0, txtr.width, txtr.height}, {b.pos.x, b.pos.y, b.size.x, b.size.y}, b.size/2, b.rot, WHITE);
+        }
+    }
+}
+
 bool anyBlockButtonsHovered(CourseEditor& crsE)
 {
     for (auto& b : crsE.m_blockButts)
@@ -182,18 +199,19 @@ void putBlockAtEnd(std::vector<Block>& bs, int i)
 
 void CourseEditor::initialize()
 {
-    m_blockButt = {{10, 10}, {120, 20}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "block", 0};
-    m_startButt = {{10, 32}, {120, 20}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "start", 0};
+    m_cam = {{GetScreenWidth()/2, GetScreenHeight()/2}, {0, 0}, 0, 1}; 
+    m_blockButt = {{10, 10}, {120, 20}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "block", 0};
+    m_startButt = {{10, 32}, {120, 20}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "start", 0};
     m_buttSelected = -1;
-    m_quitButt = {{GetScreenWidth() - 60, 10}, {50, 20}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "quit", 0};
-    m_saveButt = {{GetScreenWidth() - 60, 32}, {50, 20}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "save", 0};
-    m_testButt = {{GetScreenWidth() - 60, 54}, {50, 20}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "test", 0};
+    m_quitButt = {{60, 10}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "quit", 0};
+    m_saveButt = {{60, 32}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "save", 0};
+    m_testButt = {{60, 54}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "test", 0};
     m_blockButts = {
-        {{70, GetScreenHeight() - 70}, {50, 50}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "rec", 0},
-        {{140, GetScreenHeight() - 70}, {50, 50}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "duck", 0}
+        {{70, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "rec", 0},
+        {{140, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "duck", 0}
     };
     m_blockButtSelected = -1;
-    m_deleteButt = {{GetScreenWidth() - 160, 10}, {60, 30}, txtrStrg().get("res/error.png"), RED, MAROON, PINK, "delete", 0};
+    m_deleteButt = {{160, 10}, {60, 30}, 1, 0, txtrStrg().get("res/error.png"), RED, MAROON, PINK, "delete", 0};
     m_blockSelected = false;
     m_editMode = -1;
 }
@@ -426,8 +444,26 @@ void drawCourseEditorStartMode(CourseEditor& crsE, const Course& crs, Camera2D& 
     DrawTextureV(txtrStrg().get("res/start.png"), GetMousePosition() - Vector2{txtrStrg().get("res/start.png").width/2, txtrStrg().get("res/start.png").height/2}, {0, 200, 0, 190});
 }
 
-void CourseEditor::update(Course& crs, Camera2D& c) // todo: make it so you cant do stuff while mouse is over any button
+void useCameraControls(Camera2D& cam)
 {
+    if (cam.zoom * std::pow(1.2, GetMouseWheelMove()) > .2) // limit on how far it can zoom out
+        cam.zoom *= std::pow(1.2, GetMouseWheelMove());
+
+    int cameraSpeed{500.0f/cam.zoom};
+    if (IsKeyDown(KEY_A))
+        cam.target.x -= cameraSpeed * lowerLimitFrameTime();
+    if (IsKeyDown(KEY_D))
+        cam.target.x += cameraSpeed * lowerLimitFrameTime();
+    if (IsKeyDown(KEY_W))
+        cam.target.y -= cameraSpeed * lowerLimitFrameTime();
+    if (IsKeyDown(KEY_S))
+        cam.target.y += cameraSpeed * lowerLimitFrameTime();
+}
+
+void CourseEditor::update(Course& crs) // todo: make it so you cant do stuff while mouse is over any button
+{
+    m_cam.offset = {GetScreenWidth()/2, GetScreenHeight()/2};
+
     m_blockButt.update();
     m_startButt.update();
 
@@ -456,45 +492,29 @@ void CourseEditor::update(Course& crs, Camera2D& c) // todo: make it so you cant
     switch (m_buttSelected)
     {
         case 0:
-            updateCourseEditorBlockMode(*this, crs, c);
+            updateCourseEditorBlockMode(*this, crs, m_cam);
             break;
         case 1:
-            updateCourseEditorStartMode(*this, crs, c);
+            updateCourseEditorStartMode(*this, crs, m_cam);
             break;
         default:
             break;
     }
 
-    if (c.zoom * std::pow(1.2, GetMouseWheelMove()) > .2) // limit on how far it can zoom out
-        c.zoom *= std::pow(1.2, GetMouseWheelMove());
-
-    int cameraSpeed{500.0f/c.zoom};
-    if (IsKeyDown(KEY_A))
-        c.target.x -= cameraSpeed * lowerLimitFrameTime();
-    if (IsKeyDown(KEY_D))
-        c.target.x += cameraSpeed * lowerLimitFrameTime();
-    if (IsKeyDown(KEY_W))
-        c.target.y -= cameraSpeed * lowerLimitFrameTime();
-    if (IsKeyDown(KEY_S))
-        c.target.y += cameraSpeed * lowerLimitFrameTime();
+    useCameraControls(m_cam);
 }
 
-void CourseEditor::draw(const Course& crs, Camera2D& c)
+void CourseEditor::draw(const Course& crs)
 {
-    BeginMode2D(c);
+    BeginMode2D(m_cam);
 
-    Rectangle cameraZone{c.target.x - c.offset.x / c.zoom, c.target.y - c.offset.y / c.zoom, c.offset.x * 2 / c.zoom, c.offset.y * 2 / c.zoom};
-    drawTextureTiles(txtrStrg().get("res/sky1.png"), {0, 0}, cameraZone);
+    drawTextureTiles(txtrStrg().get("res/sky1.png"), {0, 0}, getCameraRec(m_cam));
 
+    drawCourseBlocks(crs, getCameraRec(m_cam));
+    
     for (int i{}; i < crs.blocks.size(); ++i)
     {
         Block b{crs.blocks.at(i)};
-
-        if (CheckCollisionRecs(getRotatedRecBounds({b.pos.x-b.size.x/2, b.pos.y-b.size.y/2, b.size.x, b.size.y}, b.rot, b.pos), cameraZone))
-        { // only draw the block if it's bounding box touches the camera
-            Texture2D txtr{getBlockTexture(b.type)};
-            DrawTexturePro(txtr, {0, 0, txtr.width, txtr.height}, {b.pos.x, b.pos.y, b.size.x, b.size.y}, b.size/2, b.rot, WHITE);
-        }
 
         if (i == crs.blocks.size() - 1 && m_blockSelected && m_buttSelected == 0)
         {
@@ -505,7 +525,7 @@ void CourseEditor::draw(const Course& crs, Camera2D& c)
 
     EndMode2D();
 
-    DrawTextureV(txtrStrg().get("res/start.png"), getPositionFromCameraToScreen(crs.start, c) - Vector2{txtrStrg().get("res/start.png").width/2, txtrStrg().get("res/start.png").height/2}, WHITE);
+    DrawTextureV(txtrStrg().get("res/start.png"), getPositionFromCameraToScreen(crs.start, m_cam) - Vector2{txtrStrg().get("res/start.png").width/2, txtrStrg().get("res/start.png").height/2}, WHITE);
 
     m_blockButt.draw();
     m_startButt.draw();
@@ -520,10 +540,10 @@ void CourseEditor::draw(const Course& crs, Camera2D& c)
     switch (m_buttSelected)
     {
         case 0:
-            drawCourseEditorBlockMode(*this, crs, c);
+            drawCourseEditorBlockMode(*this, crs, m_cam);
             break;
         case 1:
-            drawCourseEditorStartMode(*this, crs, c);
+            drawCourseEditorStartMode(*this, crs, m_cam);
             break;
         default:
             break;

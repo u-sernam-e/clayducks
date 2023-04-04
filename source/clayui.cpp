@@ -10,64 +10,64 @@ void ClayUi::initialize(Scene s)
         case Scene::MAIN:
         {
             m_editorMode = false;
-            m_btns = {{{60, 60}, {600, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "play course", 0},
-                    {{60, 200}, {600, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "course editor", 0}
+            m_btns = {{{60, 60}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "play course", 0},
+                    {{60, 200}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "course editor", 0}
 #if defined(PLATFORM_DESKTOP)
-                    ,{{60, 340}, {600, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "quit", 0}
+                    ,{{60, 340}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "quit", 0}
 #endif
                     };
             break;
         }
         case Scene::CAMPAIGNORCUSTOM:
         {
-            m_btns = {{{60, 60}, {600, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "campaign", 0},
-                    {{60, 200}, {600, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "custom", 0},
-                    {{60, 340}, {600, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
+            m_btns = {{{60, 60}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "campaign", 0},
+                    {{60, 200}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "custom", 0},
+                    {{60, 340}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
                     };
             break;
         }
         case Scene::COURSESELECT:
         {
-            m_btns = {{{60, 60}, {600, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "course 1", 0},
-                    {{60, 340}, {300, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
+            m_btns = {{{60, 60}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "course 1", 0},
+                    {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
                     };
             break;
         }
         case Scene::DRAGINCRS:
         {
-            m_btns = {{{60, 340}, {300, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
+            m_btns = {{{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
                     };
             break;
         }
         case Scene::INGAME:
         {
-            m_btns = {{{GetScreenWidth() - 160, 60}, {100, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "", 0}
+            m_btns = {{{160, 60}, {100, 100}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "", 0}
                     };
             break;
         }
         case Scene::PAUSE:
         {
-            m_btns = {{{60, 60}, {300, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "resume", 0},
-                    {{60, 200}, {300, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "restart", 0},
-                    {{60, 340}, {300, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "main menu", 0},
-                    {{60, 340}, {300, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back to editor", 0}
+            m_btns = {{{60, 60}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "resume", 0},
+                    {{60, 200}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "restart", 0},
+                    {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "main menu", 0},
+                    {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back to editor", 0}
                     };
             break;
         }
         case Scene::WIN:
         {
-            m_btns = {{{60, 200}, {300, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "restart", 0},
-                    {{60, 340}, {300, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "main menu", 0},
-                    {{60, 340}, {300, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back to editor", 0}
+            m_btns = {{{60, 200}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "restart", 0},
+                    {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "main menu", 0},
+                    {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back to editor", 0}
                     };
             break;
         }
         case Scene::LOADORNEW:
         {
             m_editorMode = true;
-            m_btns = {{{60, 60}, {600, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "load", 0},
-                    {{60, 200}, {600, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "new", 0},
-                    {{60, 340}, {600, 100}, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
+            m_btns = {{{60, 60}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "load", 0},
+                    {{60, 200}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "new", 0},
+                    {{60, 340}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
                     };
             break;
         }

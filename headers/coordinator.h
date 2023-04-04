@@ -1,7 +1,7 @@
 #ifndef COORDINATOR
 #define COORDINATOR
 #include "course.h"
-#include "ball.h"
+#include "ingame.h"
 #include "clayui.h"
 #include "texturestorage.h"
 
@@ -11,11 +11,10 @@
 
 struct GameData
 {
-    Ball b;
+    InGame inga;
 	Course crs;
     CourseEditor crsE;
     ClayUi u;
-    Camera2D c;
 };
 
 void initialize(GameData& g);

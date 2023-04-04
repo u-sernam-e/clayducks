@@ -40,6 +40,8 @@ struct CourseEditor
 public:
     const int m_minBlockDimension{20};
 
+    Camera2D m_cam;
+
     Button m_blockButt;
     Button m_startButt;
     int m_buttSelected; // in the order of ^^: -1 for nothing selected, 0 for blockButt, 1 for startButt, etc.
@@ -61,12 +63,20 @@ public:
     Vector2 m_editBlockStartPos; // for rotations, just use x
 public:
     void initialize();
-    void update(Course& crs, Camera2D& c);
-    void draw(const Course& crs, Camera2D& c);
+    void update(Course& crs);
+    void draw(const Course& crs);
 };
 
 
 Course loadCourse(); // drag and drop file
 void saveCourse(const Course& crs, std::string name);
+
+Rectangle getCameraRec(const Camera2D& cam);
+void drawTextureTiles(Texture2D txtr, Vector2 origin, Rectangle cameraRec);
+Vector2 getPositionFromScreenToCamera(Vector2 pos, Camera2D c);
+Vector2 getPositionFromCameraToScreen(Vector2 pos, Camera2D c);
+Texture2D getBlockTexture(BlockType b);
+void drawCourseBlocks(const Course& crs, Rectangle camRec);
+void useCameraControls(Camera2D& cam);
 
 #endif
