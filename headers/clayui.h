@@ -40,6 +40,7 @@ public: // xdd fuck the police fuck the feds fuck the cia fuck the fbi
     Scene m_scn;
     TempCourse m_tmpC;
     bool m_editorMode; // consider using flags/bitset/whatever if theres too many bools eventually
+    bool m_shouldResumeGame;
 public:
     ClayUi() {}
 

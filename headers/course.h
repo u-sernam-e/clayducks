@@ -1,6 +1,7 @@
 #ifndef COURSE
 #define COURSE
 #include "button.h"
+#include "textinput.h"
 #include "texturestorage.h"
 #include "rayextended.h"
 #include <vector>
@@ -13,11 +14,11 @@ enum class BlockType
     REC,
     DUCK
     /*to do:
-    TRIANGLE
+    TRIANGLE?maybe not
     CIRCLE
     SPIKES
     BOUNCER
-    BOOSTER*/ 
+    BOOSTER*/
 };
 
 struct Block
@@ -61,6 +62,16 @@ public:
     int m_editMode; // -1 for nothing, 0 for move, 1 for rotate, 2 for scale
     Vector2 m_editMouseStartPos; // might be unneeded
     Vector2 m_editBlockStartPos; // for rotations, just use x
+
+    bool m_quitDialogueActive;
+    Button m_quitConfirmButt;
+    Button m_quitCancelButt;
+
+    bool m_saveDialogueActive;
+    TextInput m_saveTextInput;
+    Button m_saveCancelButt;
+
+    int m_sceneChange; // 0 for no change, 1 for main menu, 2 for ingame
 public:
     void initialize();
     void update(Course& crs);
@@ -68,15 +79,16 @@ public:
 };
 
 
-Course loadCourse(); // drag and drop file
+Course loadCourseFromFile(std::string fileName);
+Course loadDroppedCourse(); // drag and drop file
 void saveCourse(const Course& crs, std::string name);
 
 Rectangle getCameraRec(const Camera2D& cam);
 void drawTextureTiles(Texture2D txtr, Vector2 origin, Rectangle cameraRec);
-Vector2 getPositionFromScreenToCamera(Vector2 pos, Camera2D c);
-Vector2 getPositionFromCameraToScreen(Vector2 pos, Camera2D c);
 Texture2D getBlockTexture(BlockType b);
 void drawCourseBlocks(const Course& crs, Rectangle camRec);
+Rectangle getBlockRec(Block b);
 void useCameraControls(Camera2D& cam);
+std::string getCameraInfo(const Camera2D& cam);
 
 #endif

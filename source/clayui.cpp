@@ -89,11 +89,15 @@ bool updateUiMain(ClayUi& u)
         b.update();
     if (u.m_btns.at(0).released()) 
     {
+        Course c{}; // reset course to empty course
+        u.m_tmpC.setC(c);
         u.initialize(Scene::CAMPAIGNORCUSTOM);
         return true;
     }
     if (u.m_btns.at(1).released())
     {
+        Course c{};
+        u.m_tmpC.setC(c);
         u.initialize(Scene::LOADORNEW);
         return true;
     }
@@ -147,6 +151,7 @@ bool updateUiCourseSelect(ClayUi& u)
         b.update();
     if (u.m_btns.at(0).released()) 
     {
+        u.m_tmpC.setC(loadCourseFromFile("res/campaign/1.claycrs"));
         u.initialize(Scene::INGAME); // need to set the course
         return true;
     }
@@ -181,11 +186,11 @@ bool updateUiDragInCrs(ClayUi& u)
     {
         if (u.m_editorMode)
         {
-            u.m_tmpC.setC(loadCourse());
+            u.m_tmpC.setC(loadDroppedCourse());
             u.initialize(Scene::EDITOR);
             return true;
         }
-        u.m_tmpC.setC(loadCourse());
+        u.m_tmpC.setC(loadDroppedCourse());
         u.initialize(Scene::INGAME);
         return true;
     }
@@ -223,6 +228,7 @@ bool updateUiPause(ClayUi& u)
     if (u.m_btns.at(0).released() || IsKeyReleased(KEY_ESCAPE))
     {
         u.initialize(Scene::INGAME);
+        u.m_shouldResumeGame = true;
         return true;
     }
     if (u.m_btns.at(1).released()) // need to send signal or whatever that the course should restart
@@ -244,15 +250,15 @@ bool updateUiPause(ClayUi& u)
 }
 void drawUiPause(ClayUi& u)
 {
-    int i{};
+    int i{-1};
     for (auto& b : u.m_btns)
     {
+        ++i;
         if (i == 2 && u.m_editorMode)
             continue;
         if (i == 3 && !u.m_editorMode)
             continue;
         b.draw();
-        ++i;
     }
 }
 

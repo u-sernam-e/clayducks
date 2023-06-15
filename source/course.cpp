@@ -14,19 +14,9 @@ WELL HAVE FUN, IM OFF TO MAKE THE MOTHERFUCKING GAME!
 
 also eventually add more blocks
 */
-
-Course loadCourse() // returns empty course if no files are dropped
+Course loadCourse(std::ifstream& inf)
 {
     Course output{};
-    std::ifstream inf{};
-    if (IsFileDropped())
-    {
-            FilePathList droppedFiles = LoadDroppedFiles();
-
-            inf.open(droppedFiles.paths[0]);
-
-            UnloadDroppedFiles(droppedFiles);    // Unload filepaths from memory
-    }
 
     inf.seekg(0, std::ios::end);
     if (inf.tellg() > sizeof(output.start) + sizeof(output.par))
@@ -51,6 +41,28 @@ Course loadCourse() // returns empty course if no files are dropped
     return output;
 }
 
+Course loadCourseFromFile(std::string fileName)
+{
+    std::ifstream inf{fileName.c_str()};
+    return loadCourse(inf);
+}
+
+Course loadDroppedCourse() // returns empty course if no files are dropped
+{
+    std::ifstream inf{};
+
+    if (IsFileDropped())
+    {
+            FilePathList droppedFiles = LoadDroppedFiles();
+
+            inf.open(droppedFiles.paths[0]);
+
+            UnloadDroppedFiles(droppedFiles);    // Unload filepaths from memory
+    }
+
+    return loadCourse(inf);
+}
+
 void saveCourse(Course& crs, std::string name) // adds .claycrs to name AND OVERWRITES FILE SO BE CAREFUL
 {
     std::ofstream outf{name + ".claycrs"};
@@ -73,7 +85,7 @@ Rectangle getCameraRec(const Camera2D& cam)
     return {cam.target.x - cam.offset.x / cam.zoom, cam.target.y - cam.offset.y / cam.zoom, cam.offset.x * 2 / cam.zoom, cam.offset.y * 2 / cam.zoom};
 }
 
-void drawTextureTiles(Texture2D txtr, Vector2 origin, Rectangle cameraRec) // this should be out of camera mode
+void drawTextureTiles(Texture2D txtr, Vector2 origin, Rectangle cameraRec) // this should be inside of camera mode
 {
     std::vector<Vector2> txtrsToDraw{};
     // calculating the upper left txtr
@@ -99,16 +111,6 @@ void drawTextureTiles(Texture2D txtr, Vector2 origin, Rectangle cameraRec) // th
     {
         DrawTextureV(txtr, t, WHITE);
     }
-}
-
-Vector2 getPositionFromScreenToCamera(Vector2 pos, Camera2D c)
-{
-    return (pos - c.offset) / c.zoom + c.target;
-}
-
-Vector2 getPositionFromCameraToScreen(Vector2 pos, Camera2D c)
-{
-    return c.zoom * (pos - c.target) + c.offset;
 }
 
 Texture2D getBlockTexture(BlockType b) // change this if you add different themes
@@ -157,7 +159,7 @@ bool checkCollisionForBlockScaling(Vector2 p, Block b)
     return false;
 }
 
-void drawCourseBlocks(const Course& crs, Rectangle camRec)
+void drawCourseBlocks(const Course& crs, Rectangle camRec) // this should be inside of camera mode
 {
     for (auto& b : crs.blocks)
     {
@@ -199,11 +201,11 @@ void putBlockAtEnd(std::vector<Block>& bs, int i)
 
 void CourseEditor::initialize()
 {
-    m_cam = {{GetScreenWidth()/2, GetScreenHeight()/2}, {0, 0}, 0, 1}; 
+    m_cam = {{GetScreenWidth()/2, GetScreenHeight()/2}, {0, 0}, 0, 1};
     m_blockButt = {{10, 10}, {120, 20}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "block", 0};
     m_startButt = {{10, 32}, {120, 20}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "start", 0};
     m_buttSelected = -1;
-    m_quitButt = {{60, 10}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "quit", 0};
+    m_quitButt = {{60, 10}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), RED, {240, 100, 100, 255}, MAROON, "quit", 0};
     m_saveButt = {{60, 32}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "save", 0};
     m_testButt = {{60, 54}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "test", 0};
     m_blockButts = {
@@ -211,14 +213,21 @@ void CourseEditor::initialize()
         {{140, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "duck", 0}
     };
     m_blockButtSelected = -1;
-    m_deleteButt = {{160, 10}, {60, 30}, 1, 0, txtrStrg().get("res/error.png"), RED, MAROON, PINK, "delete", 0};
+    m_deleteButt = {{160, 10}, {60, 30}, 1, 0, txtrStrg().get("res/error.png"), RED, {240, 100, 100, 255}, MAROON, "delete", 0};
     m_blockSelected = false;
     m_editMode = -1;
+    m_quitDialogueActive = false;
+    m_quitConfirmButt = {getScreenCenter(), {80, 40}, 0, 0, txtrStrg().get("res/error.png"), BLACK, {240, 100, 100, 255}, MAROON, "confirm", 0};
+    m_quitCancelButt = {getScreenCenter(), {80, 40}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "cancel", 0};
+    m_saveDialogueActive = false;
+    m_saveTextInput = {getScreenCenter(), {200, 25}, 0, 2};
+    m_saveCancelButt = {getScreenCenter(), {60, 25}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "cancel", 0};
+    m_sceneChange = 0;
 }
 
 void updateCourseEditorBlockEditingMode(CourseEditor& crsE, Course& crs, Camera2D& c)
 {
-    Vector2 camMouse{getPositionFromScreenToCamera(GetMousePosition(), c)}; // pos of mouse in the camera
+    Vector2 camMouse{GetScreenToWorld2D(GetMousePosition(), c)}; // pos of mouse in the camera
 
     if (!crsE.m_blockSelected) // no block currently selected
     {
@@ -331,7 +340,7 @@ void updateCourseEditorBlockPlacingMode(CourseEditor& crsE, Course& crs, Camera2
     {
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
         {
-            Vector2 size{getPositionFromScreenToCamera(GetMousePosition(), c) - crsE.m_placingBlockStartingPos};
+            Vector2 size{GetScreenToWorld2D(GetMousePosition(), c) - crsE.m_placingBlockStartingPos};
             if (size.x < crsE.m_minBlockDimension) size.x = crsE.m_minBlockDimension;
             if (size.y < crsE.m_minBlockDimension) size.y = crsE.m_minBlockDimension;
 
@@ -353,7 +362,7 @@ void updateCourseEditorBlockPlacingMode(CourseEditor& crsE, Course& crs, Camera2
     {
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !anyButtonsHovered(crsE))
         {
-            crsE.m_placingBlockStartingPos = getPositionFromScreenToCamera(GetMousePosition(), c);
+            crsE.m_placingBlockStartingPos = GetScreenToWorld2D(GetMousePosition(), c);
             crsE.m_currentlyPlacingBlock = true;
         }
     }
@@ -415,7 +424,7 @@ void drawCourseEditorBlockMode(CourseEditor& crsE, const Course& crs, Camera2D& 
     BeginMode2D(c);
     if (crsE.m_currentlyPlacingBlock)
     {
-        Vector2 size{getPositionFromScreenToCamera(GetMousePosition(), c) - crsE.m_placingBlockStartingPos};
+        Vector2 size{GetScreenToWorld2D(GetMousePosition(), c) - crsE.m_placingBlockStartingPos};
 
         if (size.x < crsE.m_minBlockDimension) size.x = crsE.m_minBlockDimension;
         if (size.y < crsE.m_minBlockDimension) size.y = crsE.m_minBlockDimension;
@@ -436,7 +445,7 @@ void updateCourseEditorStartMode(CourseEditor& crsE, Course& crs, Camera2D& c)
 {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !anyButtonsHovered(crsE))
     {
-        crs.start = getPositionFromScreenToCamera(GetMousePosition(), c);
+        crs.start = GetScreenToWorld2D(GetMousePosition(), c);
     }
 }
 void drawCourseEditorStartMode(CourseEditor& crsE, const Course& crs, Camera2D& c)
@@ -446,6 +455,8 @@ void drawCourseEditorStartMode(CourseEditor& crsE, const Course& crs, Camera2D& 
 
 void useCameraControls(Camera2D& cam)
 {
+    cam.offset = {GetScreenWidth()/2, GetScreenHeight()/2};
+
     if (cam.zoom * std::pow(1.2, GetMouseWheelMove()) > .2) // limit on how far it can zoom out
         cam.zoom *= std::pow(1.2, GetMouseWheelMove());
 
@@ -460,48 +471,126 @@ void useCameraControls(Camera2D& cam)
         cam.target.y += cameraSpeed * lowerLimitFrameTime();
 }
 
-void CourseEditor::update(Course& crs) // todo: make it so you cant do stuff while mouse is over any button
+std::string getCameraInfo(const Camera2D& cam)
 {
-    m_cam.offset = {GetScreenWidth()/2, GetScreenHeight()/2};
+    return {"offset:     " + std::to_string(cam.offset.x) + ", " + std::to_string(cam.offset.y) + 
+            "\ntarget:   " + std::to_string(cam.target.x) + ", " + std::to_string(cam.target.y) +
+            "\nrotation: " + std::to_string(cam.rotation) + 
+            "\nzoom:     " + std::to_string(cam.zoom)};
+}
 
-    m_blockButt.update();
-    m_startButt.update();
+void updateQuitQuestion(CourseEditor& cse)
+{
+    cse.m_quitConfirmButt.setPos(getScreenCenter() + Vector2{-95, 15});
+    cse.m_quitCancelButt.setPos(getScreenCenter() + Vector2{15, 15});
 
-    m_quitButt.update();
-    m_saveButt.update();
-    m_testButt.update();
+    cse.m_quitConfirmButt.update();
+    cse.m_quitCancelButt.update();
 
-    if (m_saveButt.released())
-        saveCourse(crs, "ass");
+    if (cse.m_quitConfirmButt.released())
+        cse.m_sceneChange = 1;
 
-    if (m_blockButt.released())
+    if (cse.m_quitCancelButt.released() || IsKeyPressed(KEY_ESCAPE))
+        cse.m_quitDialogueActive = false;
+}
+
+void drawQuitQuestion(CourseEditor& cse)
+{
+    DrawRectangleV(getScreenCenter() + Vector2{-120, -75}, {240, 150}, {0, 0, 0, 200});
+    DrawText("   Are you sure you would\n  like to quit? You will LOSE\nunsaved progress FOREVER.", getScreenCenter().x - 110, getScreenCenter().y - 70, 16, WHITE);
+    cse.m_quitConfirmButt.draw();
+    cse.m_quitCancelButt.draw();
+}
+
+void updateSaveQuestion(CourseEditor& cse, Course& crs)
+{
+    cse.m_saveTextInput.setPos(getScreenCenter() + Vector2{-100, -10});
+    cse.m_saveCancelButt.setPos(getScreenCenter() + Vector2{40, 22});
+
+    cse.m_saveTextInput.update();
+    cse.m_saveCancelButt.update();
+
+    if (cse.m_saveTextInput.justSubmitted())
     {
-        if (m_buttSelected == 0)
-            m_buttSelected = -1;
-        else
-            m_buttSelected = 0;
-    }
-    if (m_startButt.released())
-    {
-        if (m_buttSelected == 1)
-            m_buttSelected = -1;
-        else
-            m_buttSelected = 1;
+        saveCourse(crs, cse.m_saveTextInput.getInputTxt());
+        cse.m_saveTextInput.setSelect(false);
+        cse.m_saveDialogueActive = false;
     }
 
-    switch (m_buttSelected)
+    if (cse.m_saveCancelButt.released() || IsKeyPressed(KEY_ESCAPE))
     {
-        case 0:
-            updateCourseEditorBlockMode(*this, crs, m_cam);
-            break;
-        case 1:
-            updateCourseEditorStartMode(*this, crs, m_cam);
-            break;
-        default:
-            break;
+        cse.m_saveDialogueActive = false;
     }
+}
 
-    useCameraControls(m_cam);
+void drawSaveQuestion(CourseEditor& cse)
+{
+    DrawRectangleV(getScreenCenter() + Vector2{-120, -55}, {240, 110}, {0, 0, 0, 200});
+    DrawText("Enter name of map.", getScreenCenter().x - 70, getScreenCenter().y - 40, 16, WHITE);
+    cse.m_saveTextInput.draw();
+    cse.m_saveCancelButt.draw();
+}
+
+void CourseEditor::update(Course& crs)
+{
+    if (m_quitDialogueActive) // add other diologues etc
+    {
+        updateQuitQuestion(*this);
+    }
+    else if (m_saveDialogueActive)
+    {
+        updateSaveQuestion(*this, crs);
+    }
+    else
+    {
+        m_blockButt.update();
+        m_startButt.update();
+
+        m_quitButt.update();
+        m_saveButt.update();
+        m_testButt.update();
+
+
+        if (m_quitButt.released())
+            m_quitDialogueActive = true;
+        if (m_saveButt.released())
+        {
+            m_saveDialogueActive = true;
+            m_saveTextInput.setSelect(true);
+        }
+        if (m_testButt.released())
+            m_sceneChange = 2;
+
+
+        if (m_blockButt.released())
+        {
+            if (m_buttSelected == 0)
+                m_buttSelected = -1;
+            else
+                m_buttSelected = 0;
+        }
+        if (m_startButt.released())
+        {
+            if (m_buttSelected == 1)
+                m_buttSelected = -1;
+            else
+                m_buttSelected = 1;
+        }
+
+        switch (m_buttSelected)
+        {
+            case 0:
+                updateCourseEditorBlockMode(*this, crs, m_cam);
+                break;
+            case 1:
+                updateCourseEditorStartMode(*this, crs, m_cam);
+                break;
+            default:
+                break;
+        }
+
+        useCameraControls(m_cam);
+    }
 }
 
 void CourseEditor::draw(const Course& crs)
@@ -525,7 +614,7 @@ void CourseEditor::draw(const Course& crs)
 
     EndMode2D();
 
-    DrawTextureV(txtrStrg().get("res/start.png"), getPositionFromCameraToScreen(crs.start, m_cam) - Vector2{txtrStrg().get("res/start.png").width/2, txtrStrg().get("res/start.png").height/2}, WHITE);
+    DrawTextureV(txtrStrg().get("res/start.png"), GetWorldToScreen2D(crs.start, m_cam) - Vector2{txtrStrg().get("res/start.png").width/2, txtrStrg().get("res/start.png").height/2}, WHITE);
 
     m_blockButt.draw();
     m_startButt.draw();
@@ -548,4 +637,9 @@ void CourseEditor::draw(const Course& crs)
         default:
             break;
     }
+    
+    if (m_quitDialogueActive)
+        drawQuitQuestion(*this);
+    if (m_saveDialogueActive)
+        drawSaveQuestion(*this);
 }
