@@ -12,21 +12,23 @@
 enum class BlockType
 {
     REC,
-    DUCK
-    /*to do:
-    TRIANGLE?maybe not
-    CIRCLE
-    SPIKES
-    BOUNCER
-    BOOSTER*/
+    CIRCLE,
+    DUCK,
+    SPIKES,
+    BOUNCER,
+    BOOSTER
+    //TRIANGLE?maybe not
 };
 
-struct Block
+struct Block // BE CAREFUL ABOUT CHANGING THIS, IT WILL CORRUPT ALREADY MADE COURSES
 {
     Vector2 pos;
     Vector2 size;
     float rot;
+
     BlockType type;
+
+    float intensity; // controls booster boost amount && bouncer bounce amount
 };
 
 struct Course

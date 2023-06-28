@@ -2,7 +2,14 @@
 
 /*
 priority list:
-    the resume button works
+    soft speed limit for booster/bouncer
+    collision detection using a line between ballpos in physics frames for high speeds/thin blocks
+    rolling
+
+    permanent floor
+    better background
+    spikes texture
+
     actual golf game mechanics/ui or whatever, or maybe not a golf game, right now its just like an engine
     ^ mainly level finish
     add more blocks
@@ -13,7 +20,7 @@ priority list:
 
 void initialize(GameData& g)
 {
-	txtrStrg().init({"res/error.png", "res/flow chart.png", "res/blockselect.png", "res/blockrec1.png", "res/duck.png", "res/sky1.png", "res/start.png", "res/dragincoursefile.png"});
+	txtrStrg().init({"res/error.png", "res/flow chart.png", "res/blockselect.png", "res/blockrec1.png", "res/duck.png", "res/blockcircle1.png", "res/booster1.png", "res/bouncer1.png", "res/spike1.png", "res/sky1.png", "res/start.png", "res/dragincoursefile.png"});
     fontStrg().init({});
 
     g.u.initialize(Scene::MAIN);
@@ -44,12 +51,25 @@ void update(GameData& g)
     if (g.u.m_scn == Scene::INGAME)
     {
         g.inga.update(g.crs);
-        if (sceneChange)
-        {
-            if (g.u.m_shouldResumeGame)
-                g.u.m_shouldResumeGame = false;
-            else
+        if (sceneChange && !g.u.m_shouldResumeGame)
                 g.inga.initialize(g.crs);
+        if (g.u.m_shouldResumeGame)
+                g.u.m_shouldResumeGame = false;
+
+        switch (g.inga.getState(g.crs))
+        {
+            case Ball::State::WIN:
+            {
+                g.u.m_inGameWon = true;
+                g.u.initialize(Scene::FINISH);
+            }
+            case Ball::State::LOSS:
+            {
+                g.u.m_inGameWon = false;
+                g.u.initialize(Scene::FINISH);
+            }
+            default:
+                break;
         }
     }
 }

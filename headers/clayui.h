@@ -16,7 +16,7 @@ enum class Scene
     DRAGINCRS,
     INGAME,
     PAUSE,
-    WIN,
+    FINISH,
     LOADORNEW,
     EDITOR
 };
@@ -40,7 +40,8 @@ public: // xdd fuck the police fuck the feds fuck the cia fuck the fbi
     Scene m_scn;
     TempCourse m_tmpC;
     bool m_editorMode; // consider using flags/bitset/whatever if theres too many bools eventually
-    bool m_shouldResumeGame;
+    bool m_shouldResumeGame; 
+    bool m_inGameWon;
 public:
     ClayUi() {}
 

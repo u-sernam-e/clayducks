@@ -1,12 +1,29 @@
 #ifndef INGAMEFILE
 #define INGAMEFILE
+#include <array>
 #include "course.h"
 
 struct Ball // idk if this will need to be a class at some point
 {
+    enum State
+    {
+        ACTIVE,
+        LOSS,
+        WIN
+    };
+
+    State state; // add timer so there can be an animation before finish screen
+
     Vector2 pos;
     Vector2 vel;
     float rad;
+
+    std::array<float, 20> stopVels; // used to stop the ball to hit over 2 seconds (10 times a second)
+    int stopVelIterator; // IDK WHAT TO NAME IT, ok
+    float timeSinceLastVel;
+
+    float collAng; // last collision angle
+    bool rolling;
 };
 
 class PhysFPSController
@@ -53,12 +70,17 @@ private:
     unsigned int m_shadBallRadLoc;
     unsigned int m_shadZoomLoc;
     unsigned int m_shadScreenSizeLoc;
+
+    float timerifj;
+    float max;
+
+    void updateShaderThings(Course& crs);
 public:
     void initialize(Course& crs);
     void update(Course& crs);
     void draw(Course& crs);
 
-    void updateShaderThings(Course& crs);
+    Ball::State getState(Course& crs);
 };
 
 #endif

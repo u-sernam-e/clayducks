@@ -6,8 +6,6 @@
 #include <fstream>
 
 /* TO DO:
-make quit button work
-make popup diologues, for asking to save when quitting and for naming saved file (will need to change the alignment thing for button and add the alignment options to textinput)
 make the ui for creating level nicer - have the mode where you can edit blocks be the default then make block mode into block placing mode
 make it so you can place blocks to the up and to the left
 WELL HAVE FUN, IM OFF TO MAKE THE MOTHERFUCKING GAME!
@@ -118,7 +116,11 @@ Texture2D getBlockTexture(BlockType b) // change this if you add different theme
     switch (b)
     {
         case BlockType::REC: return txtrStrg().get("res/blockrec1.png");
+        case BlockType::CIRCLE: return txtrStrg().get("res/blockcircle1.png");
         case BlockType::DUCK: return txtrStrg().get("res/duck.png");
+        case BlockType::SPIKES: return txtrStrg().get("res/spike1.png");
+        case BlockType::BOUNCER: return txtrStrg().get("res/bouncer1.png");
+        case BlockType::BOOSTER: return txtrStrg().get("res/booster1.png");
         default: return txtrStrg().get("res/error.png");
     }
 }
@@ -128,7 +130,11 @@ BlockType getBlockButtonNumberToBlockType(int n)
     switch(n)
     {
         case 0: return BlockType::REC;
-        case 1: return BlockType::DUCK;
+        case 1: return BlockType::CIRCLE;
+        case 2: return BlockType::DUCK;
+        case 3: return BlockType::SPIKES;
+        case 4: return BlockType::BOUNCER;
+        case 5: return BlockType::BOOSTER;
         default: return BlockType::REC;
     }
 }
@@ -210,7 +216,11 @@ void CourseEditor::initialize()
     m_testButt = {{60, 54}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "test", 0};
     m_blockButts = {
         {{70, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "rec", 0},
-        {{140, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "duck", 0}
+        {{140, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "circle", 0},
+        {{210, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "duck", 0},
+        {{280, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "spikes", 0},
+        {{350, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "bouncer", 0},
+        {{420, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "booster", 0}
     };
     m_blockButtSelected = -1;
     m_deleteButt = {{160, 10}, {60, 30}, 1, 0, txtrStrg().get("res/error.png"), RED, {240, 100, 100, 255}, MAROON, "delete", 0};
@@ -220,7 +230,7 @@ void CourseEditor::initialize()
     m_quitConfirmButt = {getScreenCenter(), {80, 40}, 0, 0, txtrStrg().get("res/error.png"), BLACK, {240, 100, 100, 255}, MAROON, "confirm", 0};
     m_quitCancelButt = {getScreenCenter(), {80, 40}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "cancel", 0};
     m_saveDialogueActive = false;
-    m_saveTextInput = {getScreenCenter(), {200, 25}, 0, 2};
+    m_saveTextInput = {getScreenCenter(), {200, 25}, 0, 3};
     m_saveCancelButt = {getScreenCenter(), {60, 25}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "cancel", 0};
     m_sceneChange = 0;
 }
@@ -303,7 +313,7 @@ void updateCourseEditorBlockEditingMode(CourseEditor& crsE, Course& crs, Camera2
                 case 2: // scaling
                 {
                     Vector2 unRotMouse{cBlk.pos + floatAngleToVec2(vec2distance(cBlk.pos, camMouse), vec2ToAngle(camMouse - cBlk.pos) - cBlk.rot)};
-                    if (cBlk.type == BlockType::DUCK) // if its circular (duck and bumper) then the x and y have to stay the same
+                    if (cBlk.type == BlockType::CIRCLE || cBlk.type == BlockType::DUCK || cBlk.type == BlockType::BOUNCER) // if its circular (duck, circle, and bumper) then the x and y have to stay the same
                     {
                         float size{std::max(std::abs(cBlk.pos.x - unRotMouse.x), std::abs(cBlk.pos.y - unRotMouse.y)) * 2};
                         if (size < crsE.m_minBlockDimension) size = crsE.m_minBlockDimension;
@@ -344,13 +354,14 @@ void updateCourseEditorBlockPlacingMode(CourseEditor& crsE, Course& crs, Camera2
             if (size.x < crsE.m_minBlockDimension) size.x = crsE.m_minBlockDimension;
             if (size.y < crsE.m_minBlockDimension) size.y = crsE.m_minBlockDimension;
 
-            if (getBlockButtonNumberToBlockType(crsE.m_blockButtSelected) == BlockType::DUCK) // if its circular (duck and bumper) then the x and y have to stay the same
+            BlockType btype = getBlockButtonNumberToBlockType(crsE.m_blockButtSelected);
+            if (btype == BlockType::CIRCLE || btype == BlockType::DUCK || btype == BlockType::BOUNCER) // if its circular (duck, circe, and bouncer) then the x and y have to stay the same
             {
                 float biggerD{std::max(size.x, size.y)};
                 size = Vector2{biggerD, biggerD};
             }
 
-            crs.blocks.push_back(Block{crsE.m_placingBlockStartingPos + size/2, size, 0, getBlockButtonNumberToBlockType(crsE.m_blockButtSelected)});
+            crs.blocks.push_back(Block{crsE.m_placingBlockStartingPos + size/2, size, 0, getBlockButtonNumberToBlockType(crsE.m_blockButtSelected), 1});
             crsE.m_currentlyPlacingBlock = false;
         }
         if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
@@ -429,7 +440,8 @@ void drawCourseEditorBlockMode(CourseEditor& crsE, const Course& crs, Camera2D& 
         if (size.x < crsE.m_minBlockDimension) size.x = crsE.m_minBlockDimension;
         if (size.y < crsE.m_minBlockDimension) size.y = crsE.m_minBlockDimension;
 
-        if (getBlockButtonNumberToBlockType(crsE.m_blockButtSelected) == BlockType::DUCK) // if its circular (duck and bumper) then the x and y have to stay the same
+        BlockType btype = getBlockButtonNumberToBlockType(crsE.m_blockButtSelected);
+        if (btype == BlockType::CIRCLE || btype == BlockType::DUCK || btype == BlockType::BOUNCER) // if its circular (duck, circle, and bumper) then the x and y have to stay the same
         {
             float biggerD{std::max(size.x, size.y)};
             size = Vector2{biggerD, biggerD};
@@ -457,7 +469,7 @@ void useCameraControls(Camera2D& cam)
 {
     cam.offset = {GetScreenWidth()/2, GetScreenHeight()/2};
 
-    if (cam.zoom * std::pow(1.2, GetMouseWheelMove()) > .2) // limit on how far it can zoom out
+    if (cam.zoom * std::pow(1.2, GetMouseWheelMove()) > .01) // limit on how far it can zoom out
         cam.zoom *= std::pow(1.2, GetMouseWheelMove());
 
     int cameraSpeed{500.0f/cam.zoom};

@@ -41,6 +41,7 @@ void ClayUi::initialize(Scene s)
         }
         case Scene::INGAME:
         {
+            m_inGameWon = false;
             m_btns = {{{160, 60}, {100, 100}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "", 0}
                     };
             break;
@@ -54,7 +55,7 @@ void ClayUi::initialize(Scene s)
                     };
             break;
         }
-        case Scene::WIN:
+        case Scene::FINISH: // need to add image at top like won, died, new best strokes, etc
         {
             m_btns = {{{60, 200}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "restart", 0},
                     {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "main menu", 0},
@@ -262,9 +263,14 @@ void drawUiPause(ClayUi& u)
     }
 }
 
-bool updateUiWin(ClayUi& u)
+bool updateUiFinish(ClayUi& u)
 {
     u.m_btns.at(0).update();
+    if (!u.m_editorMode)
+        u.m_btns.at(1).update();
+    else
+        u.m_btns.at(2).update();
+
     if (u.m_btns.at(0).released()) 
     {
         u.initialize(Scene::INGAME);
@@ -282,17 +288,17 @@ bool updateUiWin(ClayUi& u)
     }
     return false;
 }
-void drawUiWin(ClayUi& u)
+void drawUiFinish(ClayUi& u)
 {
-    int i{};
+    int i{-1};
     for (auto& b : u.m_btns)
     {
+        ++i;
         if (i == 1 && u.m_editorMode)
             continue;
         if (i == 2 && !u.m_editorMode)
             continue;
         b.draw();
-        ++i;
     }
 }
 
@@ -337,8 +343,6 @@ void drawUiEditor(ClayUi& u)
 
 bool ClayUi::update()
 {
-    if (IsKeyPressed(KEY_R))
-        initialize(Scene::MAIN);
     switch (m_scn)
     {
         case Scene::MAIN:
@@ -353,8 +357,8 @@ bool ClayUi::update()
             return updateUiInGame(*this);
         case Scene::PAUSE:
             return updateUiPause(*this);
-        case Scene::WIN:
-            return updateUiWin(*this);
+        case Scene::FINISH:
+            return updateUiFinish(*this);
         case Scene::LOADORNEW:
             return updateUiLoadOrNew(*this);
         case Scene::EDITOR:
@@ -386,8 +390,8 @@ void ClayUi::draw()
         case Scene::PAUSE:
             drawUiPause(*this);
             break;
-        case Scene::WIN:
-            drawUiWin(*this);
+        case Scene::FINISH:
+            drawUiFinish(*this);
             break;
         case Scene::LOADORNEW:
             drawUiLoadOrNew(*this);
