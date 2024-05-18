@@ -17,7 +17,7 @@ void ballInit(Ball& bl, Vector2 start)
     bl.vel = {0, 0};
     bl.rad = 10;
 
-    bl.stopVels.fill(1000);
+    bl.stopVels.fill(69696969);
     bl.stopVelIterator = 0;
     bl.timeSinceLastVel = 0;
 
@@ -31,6 +31,8 @@ void InGame::initialize(Course& crs)
     m_cam = {{GetScreenWidth()/2, GetScreenHeight()/2}, crs.start, 0, 1};
     m_PFC.initialize(60);
 
+    m_strokes = 0;
+
     m_shad = LoadShader(0, "res/shaders/330/test.fs");
     m_shadTex = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     m_shadBallPosLoc = GetShaderLocation(m_shad, "ballPos");
@@ -39,18 +41,63 @@ void InGame::initialize(Course& crs)
     m_shadScreenSizeLoc = GetShaderLocation(m_shad, "screenSize");
 }
 
+bool checkCollisionSpikes(Ball& ball, Block& blo)
+{
+    float hBoxBigness{6}; // bigger number means bigger hitbox
+    float botHBB{hBoxBigness * sqrt(2)}; // hitboxbigness for the bottom of the spikes
+
+    if (blo.size.x <= 300)
+    {
+        return CheckCollisionPointTriangle(ball.pos, {(blo.pos.x - blo.size.x/2) - botHBB, blo.pos.y + blo.size.y/2 + botHBB}, {(blo.pos.x + blo.size.x/2) + botHBB, blo.pos.y + blo.size.y/2 + botHBB}, {(blo.pos.x), blo.pos.y - blo.size.y/2 - hBoxBigness}); // lower left, top, lower right
+    }
+    else
+    {
+        int spikeAmount{static_cast<int>(blo.size.x) / 300};           // get the amount of spike
+        float spikeSize{blo.size.x / static_cast<float>(spikeAmount)}; // get the size of each spike
+
+        for (int i{}; i < spikeAmount; ++i)
+        {
+            if (CheckCollisionPointTriangle(ball.pos, {(blo.pos.x - blo.size.x / 2) + spikeSize * i - botHBB, blo.pos.y + blo.size.y/2 + botHBB}, {(blo.pos.x - blo.size.x / 2) + spikeSize * (i + 1) + botHBB, blo.pos.y + blo.size.y/2 + botHBB}, {(blo.pos.x - blo.size.x / 2) + spikeSize * (i + 0.5f), blo.pos.y - blo.size.y/2 - hBoxBigness})) // lower left, top, lower right
+                return true;
+        }
+    }
+    return false;
+}
+
+void drawCollisionSpikes(Block& blo)
+{
+    float hBoxBigness{6}; // bigger number means bigger hitbox
+    float botHBB{hBoxBigness * sqrt(2)}; // hitboxbigness for the bottom of the spikes
+
+    if (blo.size.x <= 300)
+    {
+        DrawTriangleLines({(blo.pos.x - blo.size.x/2) - botHBB, blo.pos.y + blo.size.y/2 + botHBB}, {(blo.pos.x + blo.size.x/2) + botHBB, blo.pos.y + blo.size.y/2 + botHBB}, {(blo.pos.x), blo.pos.y - blo.size.y/2 - hBoxBigness}, RED); // lower left, top, lower right
+    }
+    else
+    {
+        int spikeAmount{static_cast<int>(blo.size.x) / 300};           // get the amount of spike
+        float spikeSize{blo.size.x / static_cast<float>(spikeAmount)}; // get the size of each spike
+
+        for (int i{}; i < spikeAmount; ++i)
+        {
+            DrawTriangleLines({(blo.pos.x - blo.size.x / 2) + spikeSize * i - botHBB, blo.pos.y + blo.size.y/2 + botHBB}, {(blo.pos.x - blo.size.x / 2) + spikeSize * (i + 1) + botHBB, blo.pos.y + blo.size.y/2 + botHBB}, {(blo.pos.x - blo.size.x / 2) + spikeSize * (i + 0.5f), blo.pos.y - blo.size.y/2 - hBoxBigness}, RED); // lower left, top, lower right
+        }
+    }
+}
+
 bool checkCollisionBallBlock(Ball& ball, Block& blo)
 {
     switch (blo.type)
     {
         case BlockType::REC:
         case BlockType::BOOSTER:
-        case BlockType::SPIKES:
             return checkCollisionCircleRotatedRec(ball.pos, ball.rad, getBlockRec(blo), blo.rot, blo.pos);
         case BlockType::CIRCLE:
         case BlockType::DUCK:
         case BlockType::BOUNCER:
             return CheckCollisionCircles(ball.pos, ball.rad, blo.pos, blo.size.x/2);
+        case BlockType::SPIKES:
+            return checkCollisionSpikes(ball, blo);
         default:
             return false;
     }
@@ -168,11 +215,9 @@ Vector2 getBounceValuesCircle(Ball& ball, Block& blo, Vector2& newPos)
     return floatAngleToVec2(vec2ToFloat(newVel), vec2ToAngle(newVel) + (2 * (ball.collAng)) + 180);
 }
 
-Vector2 getNewVelBooster(Ball& ball, Block& blo)
+Vector2 getNewVelBooster(Ball& ball, Block& blo, float physDelta)
 {
-    Vector2 rotV{floatAngleToVec2(vec2ToFloat(ball.vel), vec2ToAngle(ball.vel) - blo.rot)}; // rotated velocity
-    rotV.y -= 300'000 * lowerLimitFrameTime();
-    return floatAngleToVec2(vec2ToFloat(rotV), vec2ToAngle(rotV) + blo.rot);
+    return floatAngleToVec2(3000 * physDelta, blo.rot - 90);
 }
 
 Vector2 getBounceValuesBouncer(Ball& ball, Block& blo, Vector2& newPos)
@@ -181,7 +226,7 @@ Vector2 getBounceValuesBouncer(Ball& ball, Block& blo, Vector2& newPos)
     return reducedAngVel(ball.vel, getBounceValuesCircle(ball, blo, newPos), maxBounceAmount, 1);
 }
 
-Vector2 getBounceValues(Ball& ball, Block& blo, Vector2& newPos) // returns new velocity and new, pushed out position
+Vector2 getBounceValues(Ball& ball, Block& blo, Vector2& newPos, float physDelta) // returns new velocity and new, pushed out position
 {
     switch (blo.type)
     {
@@ -192,17 +237,17 @@ Vector2 getBounceValues(Ball& ball, Block& blo, Vector2& newPos) // returns new 
         case BlockType::DUCK:
         {
             ball.state = Ball::State::WIN;
-            return ball.vel/2;
+            return -ball.vel/2;
         }
         case BlockType::SPIKES:
         {
             ball.state = Ball::State::LOSS;
-            return {0, 0};
+            return -ball.vel;
         }
         case BlockType::BOUNCER:
             return getBounceValuesBouncer(ball, blo, newPos);
         case BlockType::BOOSTER:
-            return getNewVelBooster(ball, blo);
+            return getNewVelBooster(ball, blo, physDelta);
         default:
             return ball.vel;
     }
@@ -217,51 +262,84 @@ void ballBlockPhysics(Ball& ball, Course& crs, float physDelta)
     // for boosters, just add velocity in direction
 
     std::vector<Vector2> bVels{}; // bounce velocities
+    std::vector<Vector2> bPoss{}; // bounce positions
+
+    ball.justCollided = false; // set it to false, then set it to true only if it has collided
+
+    if (ball.pos.y > 1000) // checking if the ball went into the water
+    {
+        ball.state = Ball::State::LOSS;
+    }
 
     for (auto& blo : crs.blocks)
     {
         if (checkCollisionBallBlock(ball, blo))
         {
-            Vector2 bbb{getBounceValues(ball, blo, ball.pos)};
-            bVels.push_back(bbb);
+            Vector2 newPos;
+            Vector2 newVel{getBounceValues(ball, blo, newPos, physDelta)};
+
+            if (blo.type != BlockType::BOOSTER && blo.type != BlockType::SPIKES && blo.type != BlockType::DUCK)
+            {
+                bVels.push_back(newVel); // blocks that bounce are put into bvels, which averages the velocity between them, same with bPos but with position
+                bPoss.push_back(newPos);
+                ball.justCollided = true; // also only say it collided if it bounced (just collided controls the logic for stopping the ball to be hit)
+            }
+            else // this is for blocks that add velocity and dont bounce, also booster, spikes, and duck return a velocity to add to ball.vel rather than a new velocity
+                ball.vel += newVel;
         }
     }
 
-    Vector2 total{};
+    Vector2 vTotal{};
+    Vector2 pTotal{};
 
     for (auto& vel : bVels)
     {
-        total += vel;
+        vTotal += vel;
+    }
+
+    for (auto& pos : bPoss)
+    {
+        pTotal += pos;
     }
 
     if (!bVels.empty())
-        ball.vel = total/bVels.size();
+        ball.vel = vTotal/bVels.size();
+    if (!bPoss.empty())
+        ball.pos = pTotal/bPoss.size();
 }
 
 Vector2 getDisplayBallPos(Ball& bl, PhysFPSController& PFC, Course& crs) // this is buggy
 {
-    Vector2 displayBallPos {bl.pos + (bl.vel * (PFC.getTimeSinceLastFrame()/PFC.getPhysFrameTime()) * PFC.getPhysFrameTime())};
+    Vector2 displayBallPos{bl.pos}; // estimates the position between physframes
+    displayBallPos.x += bl.vel.x * (PFC.getTimeSinceLastFrame()/PFC.getPhysFrameTime()) * PFC.getPhysFrameTime();
+    if (!(bl.justCollided && bl.vel.y < 100 && bl.vel.y > -100)) // jitter fix
+        displayBallPos.y += bl.vel.y * (PFC.getTimeSinceLastFrame()/PFC.getPhysFrameTime()) * PFC.getPhysFrameTime();
+
     Ball tempBall{bl};
     tempBall.pos = displayBallPos;
-    for (auto& blo : crs.blocks)
-    {
-        if (checkCollisionBallBlock(tempBall, blo))
-        {
-            getBounceValues(tempBall, blo, displayBallPos);
-        }
-    }
-    return displayBallPos;
+
+    ballBlockPhysics(tempBall, crs, PFC.getPhysFrameTime()); // to push the tempball out of blocks
+
+    return tempBall.pos;
 }
 
 void updateStopVels(Ball& bl, float physDelta)
 {
     bl.timeSinceLastVel += physDelta;
 
-    if (bl.timeSinceLastVel >= 1/bl.stopVels.size())
+    if (bl.timeSinceLastVel >= .1) // we check 10 times a second
     {
-        bl.timeSinceLastVel -= 1/bl.stopVels.size();
         bl.stopVels.at(bl.stopVelIterator) = vec2ToFloat(bl.vel);
         bl.stopVelIterator = (bl.stopVelIterator + 1) % bl.stopVels.size();
+        bl.timeSinceLastVel = 0;
+    }
+}
+
+void resetStopVels(Ball& bl) // puts the stop vels at large numbers
+{
+    for (auto& vel : bl.stopVels)
+    {
+        vel = 69420;
     }
 }
 
@@ -275,6 +353,64 @@ bool stopVelsLowerThan(Ball& bl, float upperLimit)
     }
 
     return total/bl.stopVels.size() < upperLimit;
+}
+
+bool ballStopped(Ball& bl, float blStopSpeed)
+{
+    return stopVelsLowerThan(bl, blStopSpeed) && bl.justCollided;
+}
+
+void InGame::doBallPhysics(Course& crs) // physics stuff
+{
+    int amountOfPhysFrames{m_PFC.getAmountPhysFrames()}; // we do it like this so that if the fps is lower than the fixed physfps, then the game doesn't slow down
+    std::cout << amountOfPhysFrames << '\n';
+
+    for (int i{}; i < amountOfPhysFrames; ++i)
+    {
+        m_bl.vel.y += M_GRAVITY * m_PFC.getPhysFrameTime(); // gravity
+
+        m_bl.vel = floatAngleToVec2(vec2ToFloat(m_bl.vel), vec2ToAngle(m_bl.vel)); // air resistance
+        
+        m_bl.pos += m_bl.vel * m_PFC.getPhysFrameTime();
+
+        ballBlockPhysics(m_bl, crs, m_PFC.getPhysFrameTime());
+
+        updateStopVels(m_bl, m_PFC.getPhysFrameTime());
+    }
+}
+
+void useCameraControlsIngame(Camera2D& cam, Vector2 blPos)
+{
+    cam.offset = {GetScreenWidth()/2, GetScreenHeight()/2};
+
+    if (cam.zoom * std::pow(1.2, GetMouseWheelMove()) > .01) // limit on how far it can zoom out
+        cam.zoom *= std::pow(1.2, GetMouseWheelMove());
+
+    int wasdCamSpeed{100.0f/cam.zoom}; // for pressing wasd
+
+    if (IsKeyDown(KEY_A))
+        cam.target.x -= wasdCamSpeed * lowerLimitFrameTime();
+    if (IsKeyDown(KEY_D))
+        cam.target.x += wasdCamSpeed * lowerLimitFrameTime();
+    if (IsKeyDown(KEY_W))
+        cam.target.y -= wasdCamSpeed * lowerLimitFrameTime();
+    if (IsKeyDown(KEY_S))
+        cam.target.y += wasdCamSpeed * lowerLimitFrameTime();
+
+
+    float ballCamSpeedx{2}; // update cam target to slowly fly towards ball
+    float ballCamSpeedy{2};
+    
+    int margin{100}; // for if the ball is outside camera range
+    if (GetWorldToScreen2D(blPos, cam).x > GetScreenWidth() - margin ||
+        GetWorldToScreen2D(blPos, cam).x < margin)
+            ballCamSpeedx = 5;
+    if  (GetWorldToScreen2D(blPos, cam).y > GetScreenHeight() - margin ||
+        GetWorldToScreen2D(blPos, cam).y < margin)
+            ballCamSpeedy = 5;
+    
+    cam.target.x += (blPos.x - cam.target.x) * lowerLimitFrameTime() * ballCamSpeedx;
+    cam.target.y += (blPos.y - cam.target.y) * lowerLimitFrameTime() * ballCamSpeedy;
 }
 
 void InGame::updateShaderThings(Course& crs)
@@ -301,41 +437,52 @@ void InGame::updateShaderThings(Course& crs)
         m_shadTex = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
     BeginTextureMode(m_shadTex);
-    BeginMode2D(m_cam);
+    
+    std::vector<Texture2D> txtrVec{txtrStrg().get("res/sky0.png"), txtrStrg().get("res/sky1.png"), txtrStrg().get("res/sky2.png"), txtrStrg().get("res/sky3.png"), txtrStrg().get("res/sky4.png")};
+    //std::vector<Texture2D> txtrVec{txtrStrg().get("res/edgetest.png"), txtrStrg().get("res/sky1.png")}; // this is here for debugging
+    drawTextureTilesPro(txtrVec, {0, 0}, m_cam, 3);
 
-    drawTextureTiles(txtrStrg().get("res/sky1.png"), {0, 0}, getCameraRec(m_cam));
+    BeginMode2D(m_cam);
+    
+    /// drawing ball
+    DrawTexturePro(txtrStrg().get("res/ball.png"), {0, 0, txtrStrg().get("res/ball.png").width, txtrStrg().get("res/ball.png").height}, {m_displayBallPos.x, m_displayBallPos.y, m_bl.rad*2, m_bl.rad*2}, {m_bl.rad, m_bl.rad}, 0, WHITE);
+    DrawTexturePro(txtrStrg().get("res/balloverlay.png"), {0, 0, txtrStrg().get("res/balloverlay.png").width, txtrStrg().get("res/balloverlay.png").height}, {m_displayBallPos.x, m_displayBallPos.y, m_bl.rad*2, m_bl.rad*2}, {m_bl.rad, m_bl.rad}, m_displayBallPos.x*2, {255, 255, 255, 125});
 
     drawCourseBlocks(crs, getCameraRec(m_cam));
-
-    DrawCircleV(m_displayBallPos, m_bl.rad, BLUE);
+    drawWater(m_cam, 1000);
 
     EndMode2D();
+
     EndTextureMode();
 }
 
 void InGame::update(Course& crs)
 {
+    if (ballStopped(m_bl, M_BALLSTOPSPEED)) // ball is stopped
+    { 
+        m_blPower = (vec2distance(GetWorldToScreen2D(m_bl.pos, m_cam), GetMousePosition()) - 50) / (txtrStrg().get("res/glasspower.png").width/5); // set the blpower
+        if (m_blPower > 1)
+            m_blPower = 1;
+        if (m_blPower < 0)
+            m_blPower = 0;
+
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && m_blPower != 0)
+        {
+            m_bl.vel += floatAngleToVec2(m_blPower * 2000, vec2ToAngle(GetScreenToWorld2D(GetMousePosition(), m_cam) - m_bl.pos)); // have animation here for golf club swinging (PROB NOT LOOOOL)
+            m_strokes += 1;
+            m_bl.justCollided = false;
+            resetStopVels(m_bl);
+        }
+    }
+    else
+        doBallPhysics(crs);
+        
     m_PFC.update();
 
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && stopVelsLowerThan(m_bl, 1000)) // click make ball move
-        m_bl.vel += (GetScreenToWorld2D(GetMousePosition(), m_cam) - m_bl.pos) * 5;
-
-    if (m_PFC.isPhysFrame()) // physics stuff
-    {
-        m_bl.vel.y += 3000 * m_PFC.getPhysFrameTime();
-
-        ballBlockPhysics(m_bl, crs, m_PFC.getPhysFrameTime());
-
-        m_bl.pos += m_bl.vel * m_PFC.getPhysFrameTime();
-
-        updateStopVels(m_bl, m_PFC.getPhysFrameTime());
-    }
-
-    useCameraControls(m_cam);
     m_displayBallPos = getDisplayBallPos(m_bl, m_PFC, crs);
-
-    float camSpeed{2}; // update cam target to slowly fly towards ball
-    m_cam.target += floatAngleToVec2(vec2distance(m_displayBallPos, m_cam.target) * lowerLimitFrameTime() * camSpeed, vec2ToAngle(m_displayBallPos - m_cam.target));
+        
+    useCameraControlsIngame(m_cam, m_displayBallPos);
+    //useCameraControlsEditor(m_cam); // this is here for debugging
 
     updateShaderThings(crs);
 }
@@ -347,21 +494,26 @@ void InGame::draw(Course& crs)
     DrawTextureRec(m_shadTex.texture, {0, 0, m_shadTex.texture.width, -m_shadTex.texture.height}, {0, 0}, WHITE);
 
     EndShaderMode();
-    
-    //DrawCircleV(GetWorldToScreen2D(m_bl.pos + floatAngleToVec2(m_bl.rad, m_bl.collAng + 180), m_cam), 3, BLACK);
+
+    if (stopVelsLowerThan(m_bl, M_BALLSTOPSPEED))
+    {
+        Texture2D gltxtr{txtrStrg().get("res/glass.png")};
+        Vector2 blScreenPos{GetWorldToScreen2D(m_bl.pos, m_cam)};
+
+        DrawTexturePro(gltxtr, {0, 0, gltxtr.width, gltxtr.height}, {blScreenPos.x, blScreenPos.y, gltxtr.width/5, gltxtr.height/5}, {-50, gltxtr.height/10}, vec2ToAngle(GetScreenToWorld2D(GetMousePosition(), m_cam) - m_bl.pos), WHITE);
+        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+        {
+            Texture2D glptxtr{txtrStrg().get("res/glasspower.png")};
+            DrawTexturePro(glptxtr, {0, 0, glptxtr.width * m_blPower, glptxtr.height}, {blScreenPos.x, blScreenPos.y, (glptxtr.width/5) * m_blPower, glptxtr.height/5}, {-50, glptxtr.height/10}, vec2ToAngle(GetScreenToWorld2D(GetMousePosition(), m_cam) - m_bl.pos), WHITE);
+        }
+        
+        DrawCircle(50, 50, 50, GREEN);
+    }
 
     DrawText((std::to_string(m_bl.vel.x) + "\n" + std::to_string(m_bl.vel.y) + "\n\n" + 
             std::to_string(vec2ToFloat(m_bl.vel))).c_str(), 10, 10, 20, MAGENTA);
     
-    timerifj += lowerLimitFrameTime();
-    if (std::abs(vec2ToFloat(m_bl.vel)) > max)
-        max = std::abs(vec2ToFloat(m_bl.vel));
-    if (timerifj > 1)
-    {
-        std::cout << max << '\n';
-        timerifj = 0;
-        max = 0;
-    }
+    DrawText(("Strokes: " + std::to_string(m_strokes)).c_str(), 10, 150, 30, RED);
 }
 
 Ball::State InGame::getState(Course& crs)

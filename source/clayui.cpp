@@ -10,65 +10,62 @@ void ClayUi::initialize(Scene s)
         case Scene::MAIN:
         {
             m_editorMode = false;
-            m_btns = {{{60, 60}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "play course", 0},
-                    {{60, 200}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "course editor", 0}
-#if defined(PLATFORM_DESKTOP)
-                    ,{{60, 340}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "quit", 0}
-#endif
+            m_btns = {{{60, 200}, {600, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "play course", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 340}, {600, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "course editor", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)}
                     };
             break;
         }
         case Scene::CAMPAIGNORCUSTOM:
         {
-            m_btns = {{{60, 60}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "campaign", 0},
-                    {{60, 200}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "custom", 0},
-                    {{60, 340}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
+            m_btns = {{{60, 60}, {600, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "campaign", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 200}, {600, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "custom", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 340}, {600, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "back", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)}
                     };
             break;
         }
         case Scene::COURSESELECT:
         {
-            m_btns = {{{60, 60}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "course 1", 0},
-                    {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
+            m_btns = {{{60, 60}, {600, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "course 1", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 340}, {300, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "back", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)}
                     };
             break;
         }
         case Scene::DRAGINCRS:
         {
-            m_btns = {{{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
+            m_btns = {{{60, 340}, {300, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "back", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)}
                     };
             break;
         }
         case Scene::INGAME:
         {
-            m_inGameWon = false;
-            m_btns = {{{160, 60}, {100, 100}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "", 0}
+            m_strokes = -1;
+            m_btns = {{{160, 60}, {100, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "||", txtrStrg().get("res/button.png"), 1, 1, 0, fontStrg().get("res/font/Days.ttf", 0)}
                     };
             break;
         }
         case Scene::PAUSE:
         {
-            m_btns = {{{60, 60}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "resume", 0},
-                    {{60, 200}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "restart", 0},
-                    {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "main menu", 0},
-                    {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back to editor", 0}
+            m_btns = {{{60, 60}, {300, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "resume", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 200}, {300, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "restart", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 340}, {300, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "main menu", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 340}, {300, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "back to editor", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)}
                     };
             break;
         }
         case Scene::FINISH: // need to add image at top like won, died, new best strokes, etc
         {
-            m_btns = {{{60, 200}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "restart", 0},
-                    {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "main menu", 0},
-                    {{60, 340}, {300, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back to editor", 0}
+            m_btns = {{{60, 200}, {300, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "restart", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 340}, {300, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "main menu", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 340}, {300, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "back to editor", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)}
                     };
             break;
         }
         case Scene::LOADORNEW:
         {
             m_editorMode = true;
-            m_btns = {{{60, 60}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "load", 0},
-                    {{60, 200}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "new", 0},
-                    {{60, 340}, {600, 100}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "back", 0}
+            m_btns = {{{60, 60}, {600, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "load", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 200}, {600, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "new", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)},
+                    {{60, 340}, {600, 100}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "back", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)}
                     };
             break;
         }
@@ -102,21 +99,13 @@ bool updateUiMain(ClayUi& u)
         u.initialize(Scene::LOADORNEW);
         return true;
     }
-#if defined(PLATFORM_DESKTOP)
-    if (u.m_btns.at(2).released())
-    {
-        return true; // quit the game
-    }
-#endif
     return false;
 }
 void drawUiMain(ClayUi& u)
 {
+    DrawTexture(txtrStrg().get("res/background.png"), 0, 0, WHITE);
     u.m_btns.at(0).draw();
     u.m_btns.at(1).draw();
-#if defined(PLATFORM_DESKTOP)
-    u.m_btns.at(2).draw();
-#endif
 }
 
 bool updateUiCampaignOrCustom(ClayUi& u)
@@ -142,6 +131,7 @@ bool updateUiCampaignOrCustom(ClayUi& u)
 }
 void drawUiCampaignOrCustom(ClayUi& u)
 {
+    DrawTexture(txtrStrg().get("res/background.png"), 0, 0, WHITE);
     for (auto& b : u.m_btns)
         b.draw();
 }
@@ -152,7 +142,11 @@ bool updateUiCourseSelect(ClayUi& u)
         b.update();
     if (u.m_btns.at(0).released()) 
     {
+#if defined(PLATFORM_WEB)
         u.m_tmpC.setC(loadCourseFromFile("res/campaign/1.claycrs"));
+#else
+        u.m_tmpC.setC(loadCourseFromFile("res/campaign/1desk.claycrs"));
+#endif
         u.initialize(Scene::INGAME); // need to set the course
         return true;
     }
@@ -165,6 +159,7 @@ bool updateUiCourseSelect(ClayUi& u)
 }
 void drawUiCourseSelect(ClayUi& u)
 {
+    DrawTexture(txtrStrg().get("res/background.png"), 0, 0, WHITE);
     for (auto& b : u.m_btns)
         b.draw();
 }
@@ -199,6 +194,7 @@ bool updateUiDragInCrs(ClayUi& u)
 }
 void drawUiDragInCrs(ClayUi& u)
 {
+    DrawTexture(txtrStrg().get("res/background.png"), 0, 0, WHITE);
     Texture2D txtr{txtrStrg().get("res/dragincoursefile.png")};
     DrawTexturePro(txtr, {0, 0, txtr.width, txtr.height}, {50, 50, GetScreenWidth() - 100, GetScreenHeight() - 100}, {0, 0}, 0, {255, 255, 255, 169});
     for (auto& b : u.m_btns)
@@ -290,6 +286,20 @@ bool updateUiFinish(ClayUi& u)
 }
 void drawUiFinish(ClayUi& u)
 {
+    if (u.m_strokes == -1)
+    {
+        DrawText("lose :(", 10, 10, 20, DARKBLUE);
+    }
+    else
+    {
+        if (u.m_editorMode)
+            DrawText("New par:", 10, 10, 20, WHITE); // its too late i have to go to bed
+        else
+            DrawText("Win!", 10, 10, 20, WHITE);
+        DrawText(std::to_string(u.m_strokes).c_str(), 10, 40, 20, WHITE);
+    }
+
+
     int i{-1};
     for (auto& b : u.m_btns)
     {
@@ -325,6 +335,7 @@ bool updateUiLoadOrNew(ClayUi& u)
 }
 void drawUiLoadOrNew(ClayUi& u)
 {
+    DrawTexture(txtrStrg().get("res/background.png"), 0, 0, WHITE);
     for (auto& b : u.m_btns)
         b.draw();
 }

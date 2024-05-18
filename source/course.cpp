@@ -83,8 +83,10 @@ Rectangle getCameraRec(const Camera2D& cam)
     return {cam.target.x - cam.offset.x / cam.zoom, cam.target.y - cam.offset.y / cam.zoom, cam.offset.x * 2 / cam.zoom, cam.offset.y * 2 / cam.zoom};
 }
 
-void drawTextureTiles(Texture2D txtr, Vector2 origin, Rectangle cameraRec) // this should be inside of camera mode
+void drawTextureTiles(Texture2D txtr, Vector2 origin, Camera2D cam) // this should be inside of camera mode
 {
+    Rectangle cameraRec{getCameraRec(cam)};
+
     std::vector<Vector2> txtrsToDraw{};
     // calculating the upper left txtr
     Vector2 cameraOffsetByOrigin{Vector2{cameraRec.x, cameraRec.y} - origin};
@@ -111,16 +113,128 @@ void drawTextureTiles(Texture2D txtr, Vector2 origin, Rectangle cameraRec) // th
     }
 }
 
+std::vector<std::vector<int>> getTileMapforTextureTilesPro(Camera2D cam, Vector2 origin, Vector2 textureSize, int amountTxtrsHorz, int amountTxtrsVert, int numTxtrs) // AOHFEWODSIIUYJYHJHNWEFSYUHBWESFKIUYHGB
+{
+    static std::vector<std::vector<int>> map{};
+    static Vector2 mapPos{floorf((cam.target.x/textureSize.x)/(cam.zoom)), floorf((cam.target.y/textureSize.y)/(cam.zoom))};
+    
+    if (map.size() != amountTxtrsVert || (!map.empty() && map[0].size() != amountTxtrsHorz)) // when zoom changes (should also be true on first call)
+    {
+        map.clear(); // clear map
+
+        map.resize(amountTxtrsVert); // put it to the right size
+        for (auto& v : map)
+        {
+            v.resize(amountTxtrsHorz);
+        }
+
+        for (int y{}; y < amountTxtrsVert; ++y)
+        {
+            for (int x{}; x < amountTxtrsHorz; ++x)
+            {
+                map[y][x] = GetRandomValue(0, numTxtrs - 1); // make cool random textures
+            }
+        }
+    }
+
+    if (Vector2{floorf((cam.target.x/textureSize.x)/(cam.zoom)), floorf((cam.target.y/textureSize.y)/(cam.zoom))} != mapPos) // position not the same
+    {
+        Vector2 offset{mapPos - Vector2{floorf((cam.target.x/textureSize.x)/(cam.zoom)), floorf((cam.target.y/textureSize.y)/(cam.zoom))}}; // the change in position from last pos
+        std::vector<std::vector<int>> mapCopy{map}; // make a copy of the map for copying
+
+        // need to move existing txtrs by the offset
+        for (int y{}; y < amountTxtrsVert; ++y)
+        {
+            for (int x{}; x < amountTxtrsHorz; ++x)
+            {
+                if (x - offset.x < 0 || y - offset.y < 0 || x - offset.x >= map[0].size() || y - offset.y >= map.size()) // if it's a new texture
+                    map[y][x] = GetRandomValue(0, numTxtrs - 1);
+                else
+                    map[y][x] = mapCopy[y - static_cast<int>(offset.y)][x - static_cast<int>(offset.x)];
+            }
+        }
+
+        mapPos = Vector2{floorf((cam.target.x/textureSize.x)/(cam.zoom)), floorf((cam.target.y/textureSize.y)/(cam.zoom))}; // set the new position
+    }
+
+    return map;
+}
+
+void drawTextureTilesPro(std::vector<Texture2D> txtrs, Vector2 origin, Camera2D cam, float parallaxMult) // this should be outside of camera mode, and zooming will look weird `\/^o^\/`, also origin might be broken i haven't tested it
+{
+    //Rectangle camRec{getCameraRec(cam)};
+
+    cam.target /= parallaxMult / cam.zoom; // parallax changes the cam target
+
+    int amountTxtrsHorz = (GetScreenWidth() / cam.zoom) / txtrs[0].width + 3; // calculate how many textures need to be drawn (maybe +2 can be removed)
+    int amountTxtrsVert = (GetScreenHeight() / cam.zoom) / txtrs[0].height + 3;
+
+    Vector2 fuckOffset{GetScreenWidth()/2, GetScreenHeight()/2}; // fuckoff dont ask (the txtr part fixes a fucky thing with getTileMapforTextureTilesPro()
+    /*if (cam.target.x < 0)
+        fuckOffset.x = -fuckOffset.x;
+    if (cam.target.y < 0)
+        fuckOffset.y = -fuckOffset.y;
+    std::cout << cam.target.x << ", " << cam.target.y << '\n';*/
+
+    Vector2 tLeft{ -cam.target - Vector2{(GetScreenWidth()/2) / cam.zoom, (GetScreenHeight()/2) / cam.zoom} + fuckOffset/cam.zoom}; // top left texture
+
+    tLeft = Vector2{fmod(tLeft.x, txtrs[0].width*cam.zoom), fmod(tLeft.y, txtrs[0].height*cam.zoom)};
+
+    origin = Vector2{fmod(origin.x, txtrs[0].width), fmod(origin.y, txtrs[0].height)}; // make sure the origin isn't too far away (origin changes the offset of the top left texture)
+
+    Vector2 targetOffset{fmod(cam.target.x, txtrs[0].width), fmod(cam.target.y, txtrs[0].height)}; // the offset based on camera position
+
+
+    std::vector<std::vector<int>> map{getTileMapforTextureTilesPro(cam, origin, Vector2{txtrs[0].width, txtrs[0].height}, amountTxtrsHorz, amountTxtrsVert, txtrs.size())}; // get map for textures to keep *continuity*
+
+    for (int y{}; y < amountTxtrsVert; ++y) // finally, draw :)!
+    {
+        for (int x{}; x < amountTxtrsHorz; ++x)
+        {
+            Vector2 eatShitOffset{0, 0}; // again, dont ask (this is because textures get fucked up on the axis)
+            if (cam.target.x < 0)
+                eatShitOffset.x = -txtrs[0].width;
+            if (cam.target.y < 0)
+                eatShitOffset.y = -txtrs[0].height;
+            
+            DrawTextureEx(txtrs[map[y][x]], tLeft + Vector2{((x-1)*txtrs[0].width + eatShitOffset.x)*cam.zoom, ((y-1)*txtrs[0].height + eatShitOffset.y)*cam.zoom}, 0, cam.zoom, WHITE);
+        }
+    }
+}
+
+void drawWater(Camera2D cam, float waterLevel) // inside camera
+{
+    int txtrWidth{txtrStrg().get("res/watertop.png").width/2};
+
+    static float time{};
+    time -= lowerLimitFrameTime()/50; // repeats every 50 sec
+    time = fmod(time, 1);
+
+    Rectangle cRec{getCameraRec(cam)};
+
+    float topLeftPos{cRec.x + fmod(time*2, 1)*txtrWidth - txtrWidth*2 - fmod(cam.target.x, txtrWidth)}; // for looping animation (surface moves twice as fast)
+    float botLeftPos{cRec.x + time*txtrWidth - txtrWidth*2 - fmod(cam.target.x, txtrWidth)};
+
+    int amountTxtrs{(cRec.width / txtrWidth) + 4}; // amount txtrs horizontolly (assuming surface and depth txtrs have the same width)
+
+    for (int i{1}; i <= amountTxtrs; ++i)
+    {
+        DrawTexturePro(txtrStrg().get("res/watertop.png"), {0, 0, txtrStrg().get("res/watertop.png").width, txtrStrg().get("res/watertop.png").height}, {topLeftPos + txtrWidth*i, -(txtrStrg().get("res/watertop.png").height/2) + waterLevel, txtrStrg().get("res/watertop.png").width/2, txtrStrg().get("res/watertop.png").height/2}, {0, 0}, 0, WHITE);
+        DrawTexturePro(txtrStrg().get("res/waterbot.png"), {0, 0, txtrStrg().get("res/waterbot.png").width, txtrStrg().get("res/waterbot.png").height}, {botLeftPos + txtrWidth*i, waterLevel, txtrStrg().get("res/waterbot.png").width/2, txtrStrg().get("res/waterbot.png").height/2}, {0, 0}, 0, WHITE);
+        DrawRectangle(cRec.x, txtrStrg().get("res/waterbot.png").height/2, cRec.width, cRec.height, {27, 50, 84, 255}); // the last bit is the color in the backround of the waterbot texture
+    }
+}
+
 Texture2D getBlockTexture(BlockType b) // change this if you add different themes
 {
     switch (b)
     {
-        case BlockType::REC: return txtrStrg().get("res/blockrec1.png");
-        case BlockType::CIRCLE: return txtrStrg().get("res/blockcircle1.png");
+        case BlockType::REC: return txtrStrg().get("res/blockrec.png");
+        case BlockType::CIRCLE: return txtrStrg().get("res/blockcircle.png");
         case BlockType::DUCK: return txtrStrg().get("res/duck.png");
-        case BlockType::SPIKES: return txtrStrg().get("res/spike1.png");
-        case BlockType::BOUNCER: return txtrStrg().get("res/bouncer1.png");
-        case BlockType::BOOSTER: return txtrStrg().get("res/booster1.png");
+        case BlockType::SPIKES: return txtrStrg().get("res/spike.png");
+        case BlockType::BOUNCER: return txtrStrg().get("res/bouncer.png");
+        case BlockType::BOOSTER: return txtrStrg().get("res/booster.png");
         default: return txtrStrg().get("res/error.png");
     }
 }
@@ -165,14 +279,40 @@ bool checkCollisionForBlockScaling(Vector2 p, Block b)
     return false;
 }
 
+void drawSpikes(Block b) // draws a bunch of little spikies
+{
+    Texture2D txtr{getBlockTexture(b.type)};
+
+    if (b.size.x <= 300)
+    {
+        DrawTexturePro(txtr, {0, 0, txtr.width, txtr.height}, {b.pos.x, b.pos.y, b.size.x, b.size.y}, b.size/2, b.rot, WHITE);
+    }
+    else
+    {
+        int txtrAmount{static_cast<int>(b.size.x) / 300};           // get the amount of textures
+        float txtrSize{b.size.x / static_cast<float>(txtrAmount)}; // get the size of each texture
+
+        for (int i{}; i < txtrAmount; ++i)
+        {
+            DrawTexturePro(txtr, {0, 0, txtr.width, txtr.height}, {(b.pos.x - b.size.x / 2) + txtrSize * i + b.size.x / 2, b.pos.y, txtrSize, b.size.y}, b.size / 2, b.rot, WHITE);
+        }
+    }
+    
+}
+
 void drawCourseBlocks(const Course& crs, Rectangle camRec) // this should be inside of camera mode
 {
     for (auto& b : crs.blocks)
     {
         if (CheckCollisionRecs(getRotatedRecBounds({b.pos.x-b.size.x/2, b.pos.y-b.size.y/2, b.size.x, b.size.y}, b.rot, b.pos), camRec))
         { // only draw the block if it's bounding box touches the camera
-            Texture2D txtr{getBlockTexture(b.type)};
-            DrawTexturePro(txtr, {0, 0, txtr.width, txtr.height}, {b.pos.x, b.pos.y, b.size.x, b.size.y}, b.size/2, b.rot, WHITE);
+            if (b.type == BlockType::SPIKES) // special special spikes
+                drawSpikes(b);
+            else
+            {
+                Texture2D txtr{getBlockTexture(b.type)};
+                DrawTexturePro(txtr, {0, 0, txtr.width, txtr.height}, {b.pos.x, b.pos.y, b.size.x, b.size.y}, b.size/2, b.rot, WHITE);
+            }
         }
     }
 }
@@ -208,30 +348,30 @@ void putBlockAtEnd(std::vector<Block>& bs, int i)
 void CourseEditor::initialize()
 {
     m_cam = {{GetScreenWidth()/2, GetScreenHeight()/2}, {0, 0}, 0, 1};
-    m_blockButt = {{10, 10}, {120, 20}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "block", 0};
-    m_startButt = {{10, 32}, {120, 20}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "start", 0};
+    m_blockButt = {{10, 10}, {120, 30}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "block", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 1)};
+    m_startButt = {{10, 42}, {120, 30}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "start", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 1)};
     m_buttSelected = -1;
-    m_quitButt = {{60, 10}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), RED, {240, 100, 100, 255}, MAROON, "quit", 0};
-    m_saveButt = {{60, 32}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "save", 0};
-    m_testButt = {{60, 54}, {50, 20}, 1, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "test", 0};
+    m_quitButt = {{60, 10}, {50, 30}, RED, {240, 100, 100, 255}, MAROON, "quit", txtrStrg().get("res/button.png"), 1, 1, 0, fontStrg().get("res/font/Days.ttf", 1)};
+    m_saveButt = {{60, 42}, {50, 30}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "save", txtrStrg().get("res/button.png"), 1, 1, 0, fontStrg().get("res/font/Days.ttf", 1)};
+    m_testButt = {{60, 74}, {50, 30}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "test", txtrStrg().get("res/button.png"), 1, 1, 0, fontStrg().get("res/font/Days.ttf", 1)};
     m_blockButts = {
-        {{70, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "rec", 0},
-        {{140, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "circle", 0},
-        {{210, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "duck", 0},
-        {{280, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "spikes", 0},
-        {{350, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "bouncer", 0},
-        {{420, 70}, {50, 50}, 0, 1, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "booster", 0}
+        {{20, 70}, {80, 50}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "rec", txtrStrg().get("res/button.png"), 1, 0, 1, fontStrg().get("res/font/Days.ttf", 1)},
+        {{120, 70}, {80, 50}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "circle", txtrStrg().get("res/button.png"), 1, 0, 1, fontStrg().get("res/font/Days.ttf", 1)},
+        {{220, 70}, {80, 50}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "duck", txtrStrg().get("res/button.png"), 1, 0, 1, fontStrg().get("res/font/Days.ttf", 1)},
+        {{320, 70}, {80, 50}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "spikes", txtrStrg().get("res/button.png"), 1, 0, 1, fontStrg().get("res/font/Days.ttf", 1)},
+        {{420, 70}, {80, 50}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "bouncer", txtrStrg().get("res/button.png"), 1, 0, 1, fontStrg().get("res/font/Days.ttf", 1)},
+        {{520, 70}, {80, 50}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "booster", txtrStrg().get("res/button.png"), 1, 0, 1, fontStrg().get("res/font/Days.ttf", 1)}
     };
     m_blockButtSelected = -1;
-    m_deleteButt = {{160, 10}, {60, 30}, 1, 0, txtrStrg().get("res/error.png"), RED, {240, 100, 100, 255}, MAROON, "delete", 0};
+    m_deleteButt = {{160, 10}, {60, 30}, RED, {240, 100, 100, 255}, MAROON, "delete", txtrStrg().get("res/button.png"), 1, 1, 0, fontStrg().get("res/font/Days.ttf", 0)};
     m_blockSelected = false;
     m_editMode = -1;
     m_quitDialogueActive = false;
-    m_quitConfirmButt = {getScreenCenter(), {80, 40}, 0, 0, txtrStrg().get("res/error.png"), BLACK, {240, 100, 100, 255}, MAROON, "confirm", 0};
-    m_quitCancelButt = {getScreenCenter(), {80, 40}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "cancel", 0};
+    m_quitConfirmButt = {getScreenCenter(), {80, 40}, WHITE, {240, 100, 100, 255}, MAROON, "confirm", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)};
+    m_quitCancelButt = {getScreenCenter(), {80, 40}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "cancel", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 0)};
     m_saveDialogueActive = false;
     m_saveTextInput = {getScreenCenter(), {200, 25}, 0, 3};
-    m_saveCancelButt = {getScreenCenter(), {60, 25}, 0, 0, txtrStrg().get("res/error.png"), BLACK, LIGHTGRAY, GRAY, "cancel", 0};
+    m_saveCancelButt = {getScreenCenter(), {60, 25}, WHITE, LIGHTGRAY, {230, 230, 230, 255}, "cancel", txtrStrg().get("res/button.png"), 1, 0, 0, fontStrg().get("res/font/Days.ttf", 1)};
     m_sceneChange = 0;
 }
 
@@ -425,7 +565,7 @@ void drawCourseEditorBlockMode(CourseEditor& crsE, const Course& crs, Camera2D& 
     }
     if (crsE.m_blockButtSelected != -1)
     {
-        DrawCircle(95 + 70 * crsE.m_blockButtSelected, GetScreenHeight() - 95, 10, PURPLE);
+        DrawRectangleV(crsE.m_blockButts[crsE.m_blockButtSelected].getPos(), crsE.m_blockButts[crsE.m_blockButtSelected].getSize(), {50, 225, 10, 125});
     }
     if (crsE.m_blockSelected)
     {
@@ -447,8 +587,21 @@ void drawCourseEditorBlockMode(CourseEditor& crsE, const Course& crs, Camera2D& 
             size = Vector2{biggerD, biggerD};
         }
 
-        Texture2D txtr{getBlockTexture(getBlockButtonNumberToBlockType(crsE.m_blockButtSelected))};
-        DrawTexturePro(txtr, {0, 0, txtr.width, txtr.height}, {crsE.m_placingBlockStartingPos.x, crsE.m_placingBlockStartingPos.y, size.x, size.y}, {0, 0}, 0, {255, 255, 255, 180});
+        if (getBlockButtonNumberToBlockType(crsE.m_blockButtSelected) == BlockType::SPIKES)
+        {
+            Vector2 blockPos{(GetScreenToWorld2D(GetMousePosition(), c) + crsE.m_placingBlockStartingPos)/2};
+            if (size.x == crsE.m_minBlockDimension)
+                blockPos.x = crsE.m_placingBlockStartingPos.x + crsE.m_minBlockDimension/2;
+            if (size.y == crsE.m_minBlockDimension)
+                blockPos.y = crsE.m_placingBlockStartingPos.y + crsE.m_minBlockDimension/2;
+
+            drawSpikes(Block{blockPos, size, 0, BlockType::SPIKES, 1});
+        }
+        else
+        {
+            Texture2D txtr{getBlockTexture(getBlockButtonNumberToBlockType(crsE.m_blockButtSelected))};
+            DrawTexturePro(txtr, {0, 0, txtr.width, txtr.height}, {crsE.m_placingBlockStartingPos.x, crsE.m_placingBlockStartingPos.y, size.x, size.y}, {0, 0}, 0, {255, 255, 255, 180});
+        }
     }
     EndMode2D();
 }
@@ -465,7 +618,7 @@ void drawCourseEditorStartMode(CourseEditor& crsE, const Course& crs, Camera2D& 
     DrawTextureV(txtrStrg().get("res/start.png"), GetMousePosition() - Vector2{txtrStrg().get("res/start.png").width/2, txtrStrg().get("res/start.png").height/2}, {0, 200, 0, 190});
 }
 
-void useCameraControls(Camera2D& cam)
+void useCameraControlsEditor(Camera2D& cam)
 {
     cam.offset = {GetScreenWidth()/2, GetScreenHeight()/2};
 
@@ -509,7 +662,7 @@ void updateQuitQuestion(CourseEditor& cse)
 void drawQuitQuestion(CourseEditor& cse)
 {
     DrawRectangleV(getScreenCenter() + Vector2{-120, -75}, {240, 150}, {0, 0, 0, 200});
-    DrawText("   Are you sure you would\n  like to quit? You will LOSE\nunsaved progress FOREVER.", getScreenCenter().x - 110, getScreenCenter().y - 70, 16, WHITE);
+    DrawTextEx(fontStrg().get("res/font/Days.ttf", 1), "   Are you sure you would\n  like to quit? You will LOSE\nunsaved progress FOREVER.", {getScreenCenter().x - 110, getScreenCenter().y - 70}, 16, 2, WHITE);
     cse.m_quitConfirmButt.draw();
     cse.m_quitCancelButt.draw();
 }
@@ -601,7 +754,7 @@ void CourseEditor::update(Course& crs)
                 break;
         }
 
-        useCameraControls(m_cam);
+        useCameraControlsEditor(m_cam);
     }
 }
 
@@ -609,9 +762,11 @@ void CourseEditor::draw(const Course& crs)
 {
     BeginMode2D(m_cam);
 
-    drawTextureTiles(txtrStrg().get("res/sky1.png"), {0, 0}, getCameraRec(m_cam));
+    drawTextureTiles(txtrStrg().get("res/sky1.png"), {0, 0}, m_cam);
 
     drawCourseBlocks(crs, getCameraRec(m_cam));
+
+    drawWater(m_cam, 1000);
     
     for (int i{}; i < crs.blocks.size(); ++i)
     {
@@ -636,7 +791,7 @@ void CourseEditor::draw(const Course& crs)
     m_testButt.draw();
 
     if (m_buttSelected != -1)
-        DrawCircle(145, m_buttSelected * 22 + 20, 10, GREEN);
+        DrawRectangle(10, m_buttSelected * 32 + 10, m_blockButt.getSize().x, m_blockButt.getSize().y, {50, 225, 10, 125});
 
     switch (m_buttSelected)
     {

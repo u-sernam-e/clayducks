@@ -17,7 +17,6 @@ enum class BlockType
     SPIKES,
     BOUNCER,
     BOOSTER
-    //TRIANGLE?maybe not
 };
 
 struct Block // BE CAREFUL ABOUT CHANGING THIS, IT WILL CORRUPT ALREADY MADE COURSES
@@ -28,7 +27,7 @@ struct Block // BE CAREFUL ABOUT CHANGING THIS, IT WILL CORRUPT ALREADY MADE COU
 
     BlockType type;
 
-    float intensity; // controls booster boost amount && bouncer bounce amount
+    float intensity; // controls booster boost amount && bouncer bounce amount, also currently unused
 };
 
 struct Course
@@ -86,11 +85,14 @@ Course loadDroppedCourse(); // drag and drop file
 void saveCourse(const Course& crs, std::string name);
 
 Rectangle getCameraRec(const Camera2D& cam);
-void drawTextureTiles(Texture2D txtr, Vector2 origin, Rectangle cameraRec);
+void drawTextureTiles(Texture2D txtr, Vector2 origin, Camera2D cam); // inside camera mode
+void drawTextureTilesPro(std::vector<Texture2D> txtrs, Vector2 origin, Camera2D cam, float parallaxMult); // outside camera mode, txtrs should all be the same width/height
+void drawWater(Camera2D cam, float waterLevel); // inside camera
 Texture2D getBlockTexture(BlockType b);
 void drawCourseBlocks(const Course& crs, Rectangle camRec);
 Rectangle getBlockRec(Block b);
-void useCameraControls(Camera2D& cam);
 std::string getCameraInfo(const Camera2D& cam);
+
+void useCameraControlsEditor(Camera2D& cam); // in here mostly for debug
 
 #endif

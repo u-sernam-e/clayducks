@@ -39,9 +39,9 @@ public: // xdd fuck the police fuck the feds fuck the cia fuck the fbi
     std::vector<Button> m_btns;
     Scene m_scn;
     TempCourse m_tmpC;
-    bool m_editorMode; // consider using flags/bitset/whatever if theres too many bools eventually
+    bool m_editorMode;
     bool m_shouldResumeGame; 
-    bool m_inGameWon;
+    int m_strokes; // -1 if lost
 public:
     ClayUi() {}
 

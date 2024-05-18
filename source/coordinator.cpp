@@ -20,8 +20,8 @@ priority list:
 
 void initialize(GameData& g)
 {
-	txtrStrg().init({"res/error.png", "res/flow chart.png", "res/blockselect.png", "res/blockrec1.png", "res/duck.png", "res/blockcircle1.png", "res/booster1.png", "res/bouncer1.png", "res/spike1.png", "res/sky1.png", "res/start.png", "res/dragincoursefile.png"});
-    fontStrg().init({});
+	txtrStrg().init({"res/error.png", "res/background.png", "res/button.png", "res/watertop.png", "res/waterbot.png", "res/ball.png", "res/balloverlay.png", "res/edgetest.png", "res/flow chart.png", "res/blockselect.png", "res/blockrec.png", "res/blockcircle.png", "res/duck.png", "res/booster.png", "res/bouncer.png", "res/spike.png", "res/sky0.png", "res/sky1.png", "res/sky2.png", "res/sky3.png", "res/sky4.png", "res/sky1.png", "res/sky2.png", "res/sky3.png", "res/sky0.png", "res/start.png", "res/dragincoursefile.png", "res/glass.png", "res/glasspower.png"});
+    fontStrg().init({"res/font/Roboto.ttf"});
 
     g.u.initialize(Scene::MAIN);
     g.crsE.initialize();
@@ -34,7 +34,7 @@ void update(GameData& g)
 
     if (g.u.m_tmpC.isActive())
     {
-        g.crs = g.u.m_tmpC.getC();
+        g.crs = g.u.m_tmpC.getC(); 
         g.u.m_tmpC.deleteC();
     }
     if (g.u.m_scn == Scene::EDITOR)
@@ -44,29 +44,39 @@ void update(GameData& g)
             g.crsE.initialize();
 
         if (g.crsE.m_sceneChange == 1)
+        {
             g.u.initialize(Scene::MAIN);
+            sceneChange = true;
+        }
         if (g.crsE.m_sceneChange == 2)
+        {
             g.u.initialize(Scene::INGAME);
+            sceneChange = true;
+        }
     }
     if (g.u.m_scn == Scene::INGAME)
     {
         g.inga.update(g.crs);
         if (sceneChange && !g.u.m_shouldResumeGame)
-                g.inga.initialize(g.crs);
+            g.inga.initialize(g.crs);
         if (g.u.m_shouldResumeGame)
-                g.u.m_shouldResumeGame = false;
+            g.u.m_shouldResumeGame = false;
 
         switch (g.inga.getState(g.crs))
         {
             case Ball::State::WIN:
             {
-                g.u.m_inGameWon = true;
+                if (g.u.m_editorMode) // setting par lol
+                    g.crs.par = g.inga.getStrokes();
+                g.u.m_strokes = g.inga.getStrokes();
                 g.u.initialize(Scene::FINISH);
+                break;
             }
             case Ball::State::LOSS:
             {
-                g.u.m_inGameWon = false;
+                g.u.m_strokes = -1;
                 g.u.initialize(Scene::FINISH);
+                break;
             }
             default:
                 break;

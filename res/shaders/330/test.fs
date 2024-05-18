@@ -31,9 +31,9 @@ void main()
     float lightDistance = 10;
     float colorMultiplier = (lightDistance/(worldDis - ballRad));
     
-    finalColor = vec4(texelColor.r + colorMultiplier, texelColor.g * (1 + colorMultiplier), texelColor.b * (1 + colorMultiplier), texelColor.a);
+    //finalColor = vec4(texelColor.r + colorMultiplier, texelColor.g * (1 + colorMultiplier), texelColor.b * (1 + colorMultiplier), texelColor.a);
 
-    if (worldDis < ballRad)
-        finalColor = vec4(0, 0, 255, 255);
+    //if (worldDis < ballRad)
+        finalColor = texelColor;
         
 }

@@ -4,7 +4,7 @@
 #if defined(PLATFORM_WEB)
 	#include <emscripten/emscripten.h>
 #endif
-
+// make it so that the ball doesn't get launched when you press resume from the pause menu
 GameData G;
 
 void updateDrawFrame()
@@ -14,7 +14,7 @@ void updateDrawFrame()
 	//DRAW
 	BeginDrawing();
 
-	ClearBackground(RED);
+	ClearBackground(WHITE);
 	draw(G);
 	
 	EndDrawing();
@@ -22,10 +22,7 @@ void updateDrawFrame()
 
 int main()
 {
-	SetConfigFlags(FLAG_MSAA_4X_HINT);
-	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-
-	InitWindow(1000, 500, "doin ur mom");
+	InitWindow(1000, 500, "ClayDucks");
     InitAudioDevice();
 	initialize(G);
 
